@@ -5,25 +5,100 @@ open System.Collections
 open System.Collections.Generic
 open System.Diagnostics
 open System.IO
+open System.Text
 open Argu
 
 
 module Shell =
+
+    let isNullOrEmpty str =
+        String.IsNullOrEmpty(str)
+
+    type ProcessResult = 
+        {   ExitCode : int
+            Messages : List<string>
+            Errors : List<string> }
+        member x.OK = x.ExitCode = 0
+        static member New exitCode messages errors = 
+            { ExitCode = exitCode
+              Messages = messages
+              Errors = errors }
+
+    let start (proc : Process) = 
+        try
+            System.Console.OutputEncoding <- System.Text.Encoding.UTF8
+        with exn ->
+            printfn "Failed setting UTF8 console encoding, ignoring error... %s." exn.Message
+
+        if proc.StartInfo.FileName.ToLowerInvariant().EndsWith(".exe") then
+            proc.StartInfo.Arguments <- "--debug \"" + proc.StartInfo.FileName + "\" " + proc.StartInfo.Arguments
+            proc.StartInfo.FileName <- "mono"
+        proc.Start() |> ignore
+        //startedProcesses.Add(proc.Id, proc.StartTime) |> ignore
+    let ExecProcessWithLambdas configProcessStartInfoF (timeOut : TimeSpan) silent errorF messageF = 
+        use proc = new Process()
+        proc.StartInfo.UseShellExecute <- false
+        configProcessStartInfoF proc.StartInfo
+        if isNullOrEmpty proc.StartInfo.WorkingDirectory |> not then 
+            if Directory.Exists proc.StartInfo.WorkingDirectory |> not then 
+                failwithf "Start of process %s failed. WorkingDir %s does not exist." proc.StartInfo.FileName 
+                    proc.StartInfo.WorkingDirectory
+        if silent then 
+
+
+            proc.StartInfo.StandardOutputEncoding <- Encoding.UTF8
+            proc.StartInfo.StandardErrorEncoding  <- Encoding.UTF8
+            proc.ErrorDataReceived.Add(fun d -> 
+                if d.Data <> null then errorF d.Data)
+            proc.OutputDataReceived.Add(fun d -> 
+                if d.Data <> null then messageF d.Data)
+            proc.StartInfo.RedirectStandardOutput <- true
+            proc.StartInfo.RedirectStandardError <- true
+            proc |> start
+            proc.BeginOutputReadLine()
+            proc.BeginErrorReadLine()
+
+            
+        if timeOut = TimeSpan.MaxValue then proc.WaitForExit()
+        else 
+            if not <| proc.WaitForExit(int timeOut.TotalMilliseconds) then 
+                try 
+                    proc.Kill()
+                with exn -> 
+                    eprintfn "%A" 
+                    <| sprintf "Could not kill process %s  %s after timeout." proc.StartInfo.FileName 
+                        proc.StartInfo.Arguments
+                failwithf "Process %s %s timed out." proc.StartInfo.FileName proc.StartInfo.Arguments
+        // See http://stackoverflow.com/a/16095658/1149924 why WaitForExit must be called twice.
+        proc.WaitForExit()
+        proc.ExitCode
+
+    /// Runs the given process and returns the process result.
+    /// ## Parameters
+    ///
+    ///  - `configProcessStartInfoF` - A function which overwrites the default ProcessStartInfo.
+    ///  - `timeOut` - The timeout for the process.
+    let ExecProcessAndReturnMessages configProcessStartInfoF timeOut = 
+        let errors = new List<_>()
+        let messages = new List<_>()
+        let exitCode = ExecProcessWithLambdas configProcessStartInfoF timeOut true (errors.Add) (messages.Add)
+        ProcessResult.New exitCode messages errors
+
     let execute (program : string) args workingdir =
-        let psi = 
-            ProcessStartInfo(
-                FileName = program, 
-                Arguments = args, 
-                //UseShellExecute = false,
-                WorkingDirectory = workingdir)
-        Environment.GetEnvironmentVariables()
-        |> Seq.cast<DictionaryEntry> 
-        |> Seq.iter(fun (kvp) ->
-            try
-                psi.Environment.Add(kvp.Key |> string,kvp.Value |> string)
-            with _ -> ()
-        )
-        Process.Start(psi).WaitForExit()
+            let psi = 
+                ProcessStartInfo(
+                    FileName = program, 
+                    Arguments = args, 
+                    //UseShellExecute = false,
+                    WorkingDirectory = workingdir)
+            Environment.GetEnvironmentVariables()
+            |> Seq.cast<DictionaryEntry> 
+            |> Seq.iter(fun (kvp) ->
+                try
+                    psi.Environment.Add(kvp.Key |> string,kvp.Value |> string)
+                with _ -> ()
+            )
+            Process.Start(psi).WaitForExit()
 
     let dotnet args =
         execute "dotnet" args null
@@ -35,6 +110,18 @@ module Shell =
 
     let mono options program programOptions =
         execute "mono" (sprintf "%s %s %s" options program programOptions) null
+
+    let inferRuntime () = 
+        let procResult = 
+            ExecProcessAndReturnMessages 
+                (fun psi -> 
+                    psi.FileName <- "dotnet"
+                    psi.Arguments <- "--info") 
+                TimeSpan.MaxValue
+        procResult.Messages 
+        |> Seq.filter(fun s -> s.Contains("RID"))
+        |> Seq.head
+        |> fun s -> s.Replace("RID:","").Trim()
 
 module Main =
     open Shell
@@ -68,7 +155,6 @@ module Main =
             failwith "Too many project files"    
 
         projectFiles |> Seq.head
-
 
     let getDefaultProject () =
         let directory = Directory.GetCurrentDirectory()
@@ -108,7 +194,10 @@ module Main =
         let projectRoot = (project |> IO.FileInfo).DirectoryName |> string
 
         let framework = results.GetResult <@ Framework @>
-        let runtime = results.GetResult <@ Runtime @>
+        let runtime = 
+            match results.TryGetResult <@ Runtime @> with
+            | Some r -> r
+            | None -> inferRuntime ()
         let configuration = results.GetResult (<@ Configuration @>, defaultValue="Debug")
         let monoOptions = results.GetResult (<@ MonoOptions @>, defaultValue="")
 
