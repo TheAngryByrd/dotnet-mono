@@ -55,3 +55,8 @@ OPTIONS:
   ```
   dotnet mono -f net462  -mo="--arch=64 --debug" -po="--help"
   ```
+
+  or with the `dotnet watch` tool to constantly rebuild/run your mono app
+  ```
+  dotnet watch mono -f net462  -mo="--arch=64 --debug" -po="--help"
+  ```
