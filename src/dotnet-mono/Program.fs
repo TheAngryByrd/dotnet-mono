@@ -146,13 +146,13 @@ module Main =
             interface IArgParserTemplate with
                 member s.Usage =
                     match s with
-                    | Project _ -> "specify a project.  Will default to current folder"
-                    | Framework _ -> "specify a framework."
-                    | Runtime _ -> "specify a runtime."
-                    | Configuration _ -> "specify a configuration. Will default to debug"
-                    | Restore -> "will attempt dotnet restore"
-                    | MonoOptions _ -> "mono flags"
-                    | ProgramOptions _ -> "program flags"
+                    | Project _ -> "(Optional) Specify path to proj file.  Will default to current directory."
+                    | Framework _ -> "(Mandatory) Specify a framework.  Most likely net462.  List available here: https://docs.microsoft.com/en-us/nuget/schema/target-frameworks"
+                    | Runtime _ -> "(Optional) Specify a runtime. It will attempt to infer if missing.  List available here: https://github.com/dotnet/docs/blob/master/docs/core/rid-catalog.md"
+                    | Configuration _ -> "(Optional) Specify a configuration. (Debug|Release) Will default to debug"
+                    | Restore -> "(Optional) Will attempt dotnet restore"
+                    | MonoOptions _ -> "(Optional) Flags to be passed to mono."
+                    | ProgramOptions _ -> "(Optional) Flags to be passed to running exe."
 
     let getProjectFile directory =
         let projectFiles = Directory.GetFiles(directory, "*.*proj");
