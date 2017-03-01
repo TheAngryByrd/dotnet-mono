@@ -78,7 +78,7 @@ module Shell =
         let exitCode = ExecProcessWithLambdas configProcessStartInfoF timeOut true (errors.Add) (messages.Add)
         ProcessResult.New exitCode messages errors
 
-    let execute (program : string) (argsList : string list) workingdir =
+    let executeOrFail (program : string) (argsList : string list) workingdir =
         let args =
             argsList
             |> String.concat " "
@@ -101,7 +101,7 @@ module Shell =
             failwithf "%s failed with exit code %d" program proc.ExitCode
 
     let dotnet args =
-        execute "dotnet" args null
+        executeOrFail "dotnet" args null
     
     let dotnetRestore args =
         dotnet ("restore" :: args)
@@ -109,7 +109,7 @@ module Shell =
         dotnet ("build" :: args)
 
     let mono workingDir options program programOptions =
-        execute 
+        executeOrFail 
             "mono" 
             [
                 options
