@@ -44,8 +44,6 @@ module Shell =
                 failwithf "Start of process %s failed. WorkingDir %s does not exist." proc.StartInfo.FileName 
                     proc.StartInfo.WorkingDirectory
         if silent then 
-
-
             proc.StartInfo.StandardOutputEncoding <- Encoding.UTF8
             proc.StartInfo.StandardErrorEncoding  <- Encoding.UTF8
             proc.ErrorDataReceived.Add(fun d -> 
@@ -110,7 +108,7 @@ module Shell =
     let dotnetBuild args =
         dotnet ["build" ; args]
 
-    let mono options program programOptions =
+    let mono workingDir options program programOptions =
         execute 
             "mono" 
             [
@@ -118,7 +116,7 @@ module Shell =
                 program
                 programOptions
             ]
-            null
+            workingDir
 
     let inferRuntime () = 
         let procResult = 
@@ -179,12 +177,11 @@ module Main =
         
         elif exeFiles.Length > 1 then   
             failwith "Too many exe files"
-                
-        exeFiles
-        |> Seq.head
-        |> FileInfo
-        |> string
-                
+        let fi= 
+            exeFiles
+            |> Seq.head
+            |> FileInfo
+        (fi |> string, fi.Directory |> string)                
     let (@@) path1 path2 = IO.Path.Combine(path1,path2)
 
     [<EntryPoint>]
@@ -217,8 +214,8 @@ module Main =
         dotnetBuild (sprintf "-c %s -r %s -f %s %s " configuration runtime framework project)
         
         let buildChunkOutputPath = projectRoot @@ "bin" @@ configuration @@ framework
-
-        mono monoOptions (buildChunkOutputPath |> getExecutable) programOptions
+        let exe, workingDir = (buildChunkOutputPath |> getExecutable)
+        mono workingDir monoOptions exe programOptions
 
 
         //Microsoft.Build.Exceptions.InvalidProjectFileException: The imported project "/usr/local/share/dotnet/Sdks/FSharp.NET.Sdk/Sdk/Sdk.props" was not found. Confirm that the path in the <Import> declaration is correct, and that the file exists on disk.  /Users/jimmybyrd/Documents/GitHub/dotnetcoreplayground/rc4/rc4.fsproj
