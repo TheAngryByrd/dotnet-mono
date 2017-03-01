@@ -104,9 +104,9 @@ module Shell =
         execute "dotnet" args null
     
     let dotnetRestore args =
-        dotnet ["restore"; args]
+        dotnet ("restore" :: args)
     let dotnetBuild args =
-        dotnet ["build" ; args]
+        dotnet ("build" :: args)
 
     let mono workingDir options program programOptions =
         execute 
@@ -210,8 +210,16 @@ module Main =
 
         let programOptions = results.GetResult (<@ ProgramOptions @>, defaultValue="")
         if results.Contains <@ Restore @> then
-            dotnetRestore (sprintf "--runtime %s %s " runtime project)
-        dotnetBuild (sprintf "-c %s -r %s -f %s %s " configuration runtime framework project)
+            dotnetRestore [
+                sprintf "--runtime %s" runtime
+                project
+            ]
+        dotnetBuild [
+            sprintf "--configuration %s" configuration
+            sprintf "--runtime %s" runtime
+            sprintf "--framework %s" framework
+            project
+        ] 
         
         let buildChunkOutputPath = projectRoot @@ "bin" @@ configuration @@ framework
         let exe, workingDir = (buildChunkOutputPath |> getExecutable)
