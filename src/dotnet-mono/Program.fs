@@ -10,7 +10,7 @@ open Argu
 
 
 module Shell =
-
+    //Thanks FAKE
     let isNullOrEmpty str =
         String.IsNullOrEmpty(str)
 
@@ -23,7 +23,7 @@ module Shell =
             { ExitCode = exitCode
               Messages = messages
               Errors = errors }
-
+    
     let start (proc : Process) = 
         try
             System.Console.OutputEncoding <- System.Text.Encoding.UTF8
@@ -73,43 +73,52 @@ module Shell =
         proc.WaitForExit()
         proc.ExitCode
 
-    /// Runs the given process and returns the process result.
-    /// ## Parameters
-    ///
-    ///  - `configProcessStartInfoF` - A function which overwrites the default ProcessStartInfo.
-    ///  - `timeOut` - The timeout for the process.
+
     let ExecProcessAndReturnMessages configProcessStartInfoF timeOut = 
         let errors = new List<_>()
         let messages = new List<_>()
         let exitCode = ExecProcessWithLambdas configProcessStartInfoF timeOut true (errors.Add) (messages.Add)
         ProcessResult.New exitCode messages errors
 
-    let execute (program : string) args workingdir =
-            let psi = 
-                ProcessStartInfo(
-                    FileName = program, 
-                    Arguments = args, 
-                    //UseShellExecute = false,
-                    WorkingDirectory = workingdir)
-            Environment.GetEnvironmentVariables()
-            |> Seq.cast<DictionaryEntry> 
-            |> Seq.iter(fun (kvp) ->
-                try
-                    psi.Environment.Add(kvp.Key |> string,kvp.Value |> string)
-                with _ -> ()
-            )
-            Process.Start(psi).WaitForExit()
+    let execute (program : string) (argsList : string list) workingdir =
+        let args =
+            argsList
+            |> String.concat " "
+        let psi = 
+            ProcessStartInfo(
+                FileName = program, 
+                Arguments = args, 
+                //UseShellExecute = false,
+                WorkingDirectory = workingdir)
+        Environment.GetEnvironmentVariables()
+        |> Seq.cast<DictionaryEntry> 
+        |> Seq.iter(fun (kvp) ->
+            try
+                psi.Environment.Add(kvp.Key |> string,kvp.Value |> string)
+            with _ -> ()
+        )
+        let proc = Process.Start(psi)
+        proc.WaitForExit()
+        if proc.ExitCode <> 0 then
+            failwithf "%s failed with exit code %d" program proc.ExitCode
 
     let dotnet args =
         execute "dotnet" args null
     
     let dotnetRestore args =
-        dotnet ("restore " + args)
+        dotnet ["restore"; args]
     let dotnetBuild args =
-        dotnet ("build " + args)
+        dotnet ["build" ; args]
 
     let mono options program programOptions =
-        execute "mono" (sprintf "%s %s %s" options program programOptions) null
+        execute 
+            "mono" 
+            [
+                options
+                program
+                programOptions
+            ]
+            null
 
     let inferRuntime () = 
         let procResult = 
@@ -169,7 +178,8 @@ module Main =
             failwith "No valid exes found"
         
         elif exeFiles.Length > 1 then   
-            failwith "Too many exe files"    
+            failwith "Too many exe files"
+                
         exeFiles
         |> Seq.head
         |> FileInfo
