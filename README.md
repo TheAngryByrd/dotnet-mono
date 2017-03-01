@@ -6,7 +6,7 @@ Able to run executables created by dotnet core from full framework on osx/linux
 ## Why?
 In RC4 `dotnet run` _does not_ run executables created from mono.  This tools sets to resolve that.
 
-### Why not just mono myapp.exe?
+### Why not just `mono myapp.exe`?
 Because I really like `dotnet watch` and wanted to run mono apps with it.
 
 ## How
