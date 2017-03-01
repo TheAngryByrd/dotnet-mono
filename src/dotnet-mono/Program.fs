@@ -33,16 +33,19 @@ module Shell =
     let dotnetBuild args =
         dotnet ("build " + args)
 
-    let mono args =
-        execute "mono" args null
+    let mono options program programOptions =
+        execute "mono" (sprintf "%s %s %s" options program programOptions) null
 
 module Main =
     open Shell
     type CLIArguments =
-        | [<AltCommandLine("-p")>] Project of project:string option
+        | [<AltCommandLine("-p")>] Project of project:string
         | [<AltCommandLine("-f")>] Framework of framework:string
         | [<AltCommandLine("-r")>] Runtime of runtime:string 
         | [<AltCommandLine("-c")>] Configuration of configuration:string 
+        | Restore
+        | [<EqualsAssignment>][<AltCommandLine("-mo")>] MonoOptions of monoOptions:string 
+        | [<EqualsAssignment>][<AltCommandLine("-po")>] ProgramOptions of programOptions:string 
         with
             interface IArgParserTemplate with
                 member s.Usage =
@@ -51,10 +54,11 @@ module Main =
                     | Framework _ -> "specify a framework."
                     | Runtime _ -> "specify a runtime."
                     | Configuration _ -> "specify a configuration. Will default to debug"
+                    | Restore -> "will attempt dotnet restore"
+                    | MonoOptions _ -> "mono flags"
+                    | ProgramOptions _ -> "program flags"
 
-
-    let getDefaultProject () =
-        let directory = Directory.GetCurrentDirectory()
+    let getProjectFile directory =
         let projectFiles = Directory.GetFiles(directory, "*.*proj");
 
         if projectFiles.Length = 0 then    
@@ -64,6 +68,26 @@ module Main =
             failwith "Too many project files"    
 
         projectFiles |> Seq.head
+
+
+    let getDefaultProject () =
+        let directory = Directory.GetCurrentDirectory()
+        getProjectFile directory
+
+
+    let getExecutable path =
+        let exeFiles =
+            IO.Directory.GetFiles(path, "*.exe")
+
+        if exeFiles.Length = 0 then    
+            failwith "No valid exes found"
+        
+        elif exeFiles.Length > 1 then   
+            failwith "Too many exe files"    
+        exeFiles
+        |> Seq.head
+        |> FileInfo
+        |> string
                 
     let (@@) path1 path2 = IO.Path.Combine(path1,path2)
 
@@ -73,10 +97,12 @@ module Main =
         let parser = ArgumentParser.Create<CLIArguments>(programName = "dotnet-mono", errorHandler = errorHandler)
 
         let results = parser.Parse(argv)
+        
 
         let project = 
             match results.TryGetResult <@ Project @> with
-            | Some (Some p) -> p
+            | Some p when p.EndsWith("proj") -> p
+            | Some p -> getProjectFile p
             | _ -> getDefaultProject ()
 
         let projectRoot = (project |> IO.FileInfo).DirectoryName |> string
@@ -84,17 +110,16 @@ module Main =
         let framework = results.GetResult <@ Framework @>
         let runtime = results.GetResult <@ Runtime @>
         let configuration = results.GetResult (<@ Configuration @>, defaultValue="Debug")
+        let monoOptions = results.GetResult (<@ MonoOptions @>, defaultValue="")
 
-        dotnetRestore (sprintf "--runtime %s %s " runtime project)
+        let programOptions = results.GetResult (<@ ProgramOptions @>, defaultValue="")
+        if results.Contains <@ Restore @> then
+            dotnetRestore (sprintf "--runtime %s %s " runtime project)
         dotnetBuild (sprintf "-c %s -r %s -f %s %s " configuration runtime framework project)
         
         let buildChunkOutputPath = projectRoot @@ "bin" @@ configuration @@ framework
 
-        IO.Directory.GetFiles(buildChunkOutputPath, "*.exe")
-        |> Seq.head
-        |> FileInfo
-        |> string
-        |> mono
+        mono monoOptions (buildChunkOutputPath |> getExecutable) programOptions
 
 
         //Microsoft.Build.Exceptions.InvalidProjectFileException: The imported project "/usr/local/share/dotnet/Sdks/FSharp.NET.Sdk/Sdk/Sdk.props" was not found. Confirm that the path in the <Import> declaration is correct, and that the file exists on disk.  /Users/jimmybyrd/Documents/GitHub/dotnetcoreplayground/rc4/rc4.fsproj
