@@ -10,7 +10,10 @@ open System.IO
 open System.Text
 open System.Runtime.Loader
 open Argu
-
+module Environment =
+    let getEnvironmentVariable =
+        Environment.GetEnvironmentVariable
+        >> Option.ofObj
 //Thanks FAKE
 module Shell =
     type internal ConcurrentBag<'T> with
@@ -113,7 +116,7 @@ module Shell =
         let exitCode = ExecProcessWithLambdas configProcessStartInfoF timeOut true (errors.Add) (messages.Add)
         ProcessResult.New exitCode messages errors
 
-    let executeOrFail (program : string) (argsList : string list) workingdir =
+    let executeOrFail (program : string) (argsList : string list) workingdir envVars=
         let args =
             argsList
             |> String.concat " "
@@ -123,9 +126,8 @@ module Shell =
                 Arguments = args, 
                 //UseShellExecute = false,
                 WorkingDirectory = workingdir)
-        Environment.GetEnvironmentVariables()
-        |> Seq.cast<DictionaryEntry> 
-        |> Seq.iter(fun (kvp) ->
+        envVars
+        |> Seq.iter(fun (kvp : DictionaryEntry) ->
             try
                 psi.Environment.Add(kvp.Key |> string,kvp.Value |> string)
             with _ -> ()
@@ -152,7 +154,17 @@ module Shell =
                 programOptions
             ]
             workingDir
-
+    let (@@) path1 path2 = IO.Path.Combine(path1,path2)
+    let inferFrameworkPathOverride () =
+        let mscorlib = "mscorlib.dll"
+        let possibleFrameworkPaths =
+            [
+                "/Library/Frameworks/Mono.framework/Versions/4.6.2/lib/mono/4.5/"
+                "/usr/local/Cellar/mono/4.6.2.16/lib/mono/4.5/"
+                "/usr/lib/mono/4.5/"
+            ]
+        possibleFrameworkPaths
+        |> Seq.tryFind (fun p ->File.Exists(p @@ mscorlib))
     let inferRuntime () = 
         let procResult = 
             ExecProcessAndReturnMessages 
@@ -167,12 +179,14 @@ module Shell =
 
 module Main =
     open Shell
+    
     type CLIArguments =
         | [<AltCommandLine("-p")>] Project of project:string
         | [<AltCommandLine("-f")>] Framework of framework:string
         | [<AltCommandLine("-r")>] Runtime of runtime:string 
         | [<AltCommandLine("-c")>] Configuration of configuration:string 
         | Restore
+        | [<EqualsAssignment>]FrameworkPathOverride of frameworkPathOverride:string
         | [<EqualsAssignment>][<AltCommandLine("-mo")>] MonoOptions of monoOptions:string 
         | [<EqualsAssignment>][<AltCommandLine("-po")>] ProgramOptions of programOptions:string 
         with
@@ -184,6 +198,7 @@ module Main =
                     | Runtime _ -> "(Optional) Specify a runtime. It will attempt to infer if missing.  List available here: https://github.com/dotnet/docs/blob/master/docs/core/rid-catalog.md"
                     | Configuration _ -> "(Optional) Specify a configuration. (Debug|Release) Will default to debug"
                     | Restore -> "(Optional) Will attempt dotnet restore"
+                    | FrameworkPathOverride _ -> "(Optional) Set FrameworkPathOverride as Environment Variable or as argument.  It will try to infer based on known good locations on osx/linux."
                     | MonoOptions _ -> "(Optional) Flags to be passed to mono."
                     | ProgramOptions _ -> "(Optional) Flags to be passed to running exe."
 
@@ -217,7 +232,7 @@ module Main =
             |> Seq.head
             |> FileInfo
         (fi |> string, fi.Directory |> string)                
-    let (@@) path1 path2 = IO.Path.Combine(path1,path2)
+
 
     [<EntryPoint>]
     let main argv =
@@ -242,6 +257,23 @@ module Main =
             | Some p -> getProjectFile p
             | _ -> getDefaultProject ()
 
+        let frameworkPathOverride =
+            match Environment.getEnvironmentVariable "FrameworkPathOverride" with
+            | Some fpo -> fpo
+            | None -> 
+                match results.TryGetResult <@ FrameworkPathOverride @> with
+                | Some fpo -> fpo
+                | None -> 
+                    match inferFrameworkPathOverride() with
+                    | Some fpo -> fpo
+                    | None -> 
+                        parser.PrintUsage() |> printfn "%s"
+                        failwith "Could not find FrameworkPathOverride in Environemnt, Argument, or Inferring"
+
+        let envVars = 
+            Environment.GetEnvironmentVariables()
+            |> Seq.cast<DictionaryEntry> 
+            |> Seq.append([DictionaryEntry("FrameworkPathOverride",frameworkPathOverride)])
         let projectRoot = (project |> IO.FileInfo).DirectoryName |> string
 
         let framework = results.GetResult <@ Framework @>
@@ -258,17 +290,19 @@ module Main =
             dotnetRestore [
                 sprintf "--runtime %s" runtime
                 project
-            ]
+            ] envVars
+            
         dotnetBuild [
             sprintf "--configuration %s" configuration
             sprintf "--runtime %s" runtime
             sprintf "--framework %s" framework
             project
-        ] 
+        ] envVars
+         
         
         let buildChunkOutputPath = projectRoot @@ "bin" @@ configuration @@ framework
         let exe, workingDir = (buildChunkOutputPath |> getExecutable)
-        mono workingDir monoOptions exe programOptions
+        mono workingDir monoOptions exe programOptions envVars
 
 
         //Microsoft.Build.Exceptions.InvalidProjectFileException: The imported project "/usr/local/share/dotnet/Sdks/FSharp.NET.Sdk/Sdk/Sdk.props" was not found. Confirm that the path in the <Import> declaration is correct, and that the file exists on disk.  /Users/jimmybyrd/Documents/GitHub/dotnetcoreplayground/rc4/rc4.fsproj
