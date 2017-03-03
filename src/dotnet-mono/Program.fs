@@ -1,16 +1,24 @@
 ﻿// Learn more about F# at http://fsharp.org
 
 open System
+open System.Linq
 open System.Collections
+open System.Collections.Concurrent
 open System.Collections.Generic
 open System.Diagnostics
 open System.IO
 open System.Text
+open System.Runtime.Loader
 open Argu
 
-
+//Thanks FAKE
 module Shell =
-    //Thanks FAKE
+    type internal ConcurrentBag<'T> with
+        member internal this.Clear() = 
+            while not(this.IsEmpty) do
+                this.TryTake() |> ignore
+    let startedProcesses = ConcurrentBag()
+
     let isNullOrEmpty str =
         String.IsNullOrEmpty(str)
 
@@ -23,7 +31,34 @@ module Shell =
             { ExitCode = exitCode
               Messages = messages
               Errors = errors }
-    
+
+    let kill (proc : Process) = 
+        printfn "Trying to kill process %s (Id = %d)" proc.ProcessName proc.Id
+        try 
+            proc.Kill()
+        with exn -> printfn "Could not kill process %s (Id = %d).%sMessage: %s" proc.ProcessName proc.Id Environment.NewLine exn.Message
+
+    let killAllCreatedProcesses() =
+
+        let traced = ref false
+            
+        for pid, startTime in startedProcesses do
+            try
+                let proc = Process.GetProcessById pid
+                
+                // process IDs may be reused by the operating system so we need
+                // to make sure the process is indeed the one we started
+                if proc.StartTime = startTime && not proc.HasExited then
+                    try 
+                        if not !traced then
+                            printfn "%s" "Killing all processes that are created by dotnet-mono and are still running."
+                            traced := true
+
+                            printfn  "Trying to kill %s" proc.ProcessName
+                            kill proc
+                    with exn -> printfn "Killing %s failed with %s" proc.ProcessName exn.Message                              
+            with exn -> ()
+        startedProcesses.Clear()
     let start (proc : Process) = 
         try
             System.Console.OutputEncoding <- System.Text.Encoding.UTF8
@@ -34,7 +69,7 @@ module Shell =
             proc.StartInfo.Arguments <- "--debug \"" + proc.StartInfo.FileName + "\" " + proc.StartInfo.Arguments
             proc.StartInfo.FileName <- "mono"
         proc.Start() |> ignore
-        //startedProcesses.Add(proc.Id, proc.StartTime) |> ignore
+        startedProcesses.Add(proc.Id, proc.StartTime) |> ignore
     let ExecProcessWithLambdas configProcessStartInfoF (timeOut : TimeSpan) silent errorF messageF = 
         use proc = new Process()
         proc.StartInfo.UseShellExecute <- false
@@ -186,11 +221,20 @@ module Main =
 
     [<EntryPoint>]
     let main argv =
+        Console.CancelKeyPress.Add(fun _ ->
+            printfn "%s closing up" "dotnet-mono"
+            Shell.killAllCreatedProcesses()
+        )
+        AssemblyLoadContext.Default.add_Unloading(fun ctx ->
+            printfn "%s closing up" "dotnet-mono"
+            Shell.killAllCreatedProcesses()
+        )
+
+
         let errorHandler = ProcessExiter(colorizer = function ErrorCode.HelpText -> None | _ -> Some ConsoleColor.Red)
         let parser = ArgumentParser.Create<CLIArguments>(programName = "dotnet-mono", errorHandler = errorHandler)
 
         let results = parser.Parse(argv)
-        
 
         let project = 
             match results.TryGetResult <@ Project @> with
@@ -209,6 +253,7 @@ module Main =
         let monoOptions = results.GetResult (<@ MonoOptions @>, defaultValue="")
 
         let programOptions = results.GetResult (<@ ProgramOptions @>, defaultValue="")
+        
         if results.Contains <@ Restore @> then
             dotnetRestore [
                 sprintf "--runtime %s" runtime
