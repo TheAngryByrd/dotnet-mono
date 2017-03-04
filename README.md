@@ -1,5 +1,7 @@
 # dotnet-mono
 
+[![NuGet Badge](https://buildstats.info/nuget/dotnet-mono)](https://www.nuget.org/packages/dotnet-mono/)
+
 ## What?
 Able to run executables created by dotnet core from full framework on osx/linux
 
@@ -31,28 +33,30 @@ To workaround https://github.com/dotnet/sdk/issues/335 you'll need to  set `Fram
   
   ### Options
   ```
- USAGE: dotnet-mono [--help] [--project <project>] [--framework <framework>] [--runtime <runtime>]
-                   [--configuration <configuration>] [--restore] [--monooptions=<monoOptions>]
-                   [--programoptions=<programOptions>]
+USAGE: dotnet-mono [--help] [--project <project>] [--framework <framework>] [--runtime <runtime>] [--configuration <configuration>] [--restore]
+                   [--frameworkpathoverride=<frameworkPathOverride>] [--monooptions=<monoOptions>] [--programoptions=<programOptions>]
 
 OPTIONS:
 
     --project, -p <project>
                           (Optional) Specify path to proj file.  Will default to current directory.
     --framework, -f <framework>
-                          (Mandatory) Specify a framework.  Most likely net462.  List available here:
-                          https://docs.microsoft.com/en-us/nuget/schema/target-frameworks
+                          (Mandatory) Specify a framework.  Most likely net462.  List available here: https://docs.microsoft.com/en-us/nuget/schema/target-frameworks
     --runtime, -r <runtime>
                           (Optional) Specify a runtime. It will attempt to infer if missing.  List available here:
                           https://github.com/dotnet/docs/blob/master/docs/core/rid-catalog.md
     --configuration, -c <configuration>
                           (Optional) Specify a configuration. (Debug|Release) Will default to debug
     --restore             (Optional) Will attempt dotnet restore
+    --frameworkpathoverride=<frameworkPathOverride>
+                          (Optional) Set FrameworkPathOverride as Environment Variable or as argument.  It will try to infer based on known good locations on osx/linux.
     --monooptions, -mo=<monoOptions>
                           (Optional) Flags to be passed to mono.
     --programoptions, -po=<programOptions>
                           (Optional) Flags to be passed to running exe.
     --help                display this list of options.
+
+
   ```
   ### Example Usage
   ```
