@@ -1,6 +1,6 @@
 # dotnet-mono
 
-[![NuGet Badge](http://nugetstatus.com/dotnet-mono.png)](https://www.nuget.org/packages/dotnet-mono/)
+[![NuGet Badge](https://img.shields.io/nuget/vpre/dotnet-mono.svg)](https://www.nuget.org/packages/dotnet-mono/)
 
 ## What?
 Able to run executables created by dotnet core from full framework on osx/linux
