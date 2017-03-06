@@ -12,6 +12,11 @@ In RC4 `dotnet run` _does not_ run executables created from mono.  This tools se
 Because I really like `dotnet watch` and wanted to run mono apps with it.
 
 ## How
+
+
+*Now* this tool will attempt to resolve `FrameworkPathOverride` for you.  If these defaults don't work (because of specific folder paths) you can still used the workaround below.
+
+
 To workaround https://github.com/dotnet/sdk/issues/335 you'll need to  set `FrameworkPathOverride` environment variable to use .net framework assemblies installed by mono
 
   Find where `.../mono/4.5/mscorlib.dll` is on your machine and set `FrameworkPathOverride` as an environment variable
