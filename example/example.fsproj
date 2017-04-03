@@ -7,8 +7,9 @@
   <ItemGroup>
     <PackageReference Include="FSharp.NET.Sdk" Version="1.0.*" PrivateAssets="All" />
     <PackageReference Include="FSharp.Core" Version="4.1.*" />
+    <PackageReference Include="Suave" Version="2.*"/>
     <DotNetCliToolReference Include="Microsoft.DotNet.Watcher.Tools" Version="1.0.0-msbuild3-final"/>
-    <DotNetCliToolReference Include="dotnet-mono" Version="0.1.0-alpha009"/>
+    <DotNetCliToolReference Include="dotnet-mono" Version="0.1.0-alpha010"/>
   </ItemGroup>
 
   <ItemGroup>

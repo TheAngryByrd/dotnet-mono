@@ -1,12 +1,23 @@
 ﻿// Learn more about F# at http://fsharp.org
 
 open System
+open Suave
+open Suave.Filters
+open Suave.Operators
+open Suave.Successful
 
 [<EntryPoint>]
 let main argv =
+
     if Type.GetType("Mono.Runtime") <> null then
-        printfn "Hello World from F#! on mono"
+        printfn "Hello World from F# on mono"
+    elif Type.GetType("System.Runtime.Loader.AssemblyLoadContext, System.Runtime.Loader") <> null then
+        printfn "Hello World from F# on core"
     else
-        printfn "Hello World from F#! on core?"
-    //Threading.Thread.Sleep(100000)
+        printfn "Hello World from F# on full"
+    let app =
+        choose [
+            OK "Hello World!"
+        ]
+    startWebServer defaultConfig app
     0 // return an integer exit code
