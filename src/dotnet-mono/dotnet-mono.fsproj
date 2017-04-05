@@ -1,6 +1,19 @@
 ﻿<Project Sdk="FSharp.NET.Sdk;Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <Title>dotnet-mono</Title>
+    <Description>Allows running of full framework apps on mono through the dotnet core tooling</Description>
+    <!-- summary is not migrated from project.json, but you can use the <Description> property for that if needed. -->
+    <PackageTags>dotnet core, mono</PackageTags>
+    <PackageProjectUrl>https://github.com/TheAngryByrd/dotnet-mono</PackageProjectUrl>
+    <PackageLicenseUrl>https://github.com/TheAngryByrd/dotnet-mono/LICENSE</PackageLicenseUrl>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <RepositoryType>git</RepositoryType>
+    <Authors>Jimmy Byrd</Authors>
+    <RepositoryUrl>https://raw.githubusercontent.com/sethjuarez/numl</RepositoryUrl>
+    <!-- owners is not supported in MSBuild -->
+  </PropertyGroup>
+  <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp1.0</TargetFramework>
   </PropertyGroup>
