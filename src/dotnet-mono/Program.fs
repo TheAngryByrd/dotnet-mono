@@ -131,7 +131,7 @@ module Main =
         ] envVars
          
         
-        let buildChunkOutputPath = projectRoot @@ "bin" @@ configuration @@ framework
+        let buildChunkOutputPath = projectRoot @@ "bin" @@ configuration @@ framework @@ runtime
         let exe, workingDir = (buildChunkOutputPath |> getExecutable)
         mono workingDir monoOptions exe programOptions envVars
 
