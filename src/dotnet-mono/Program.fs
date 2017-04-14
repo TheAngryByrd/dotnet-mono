@@ -7,7 +7,6 @@ open System.Collections.Generic
 open System.Diagnostics
 open System.IO
 open System.Text
-open System.Runtime.Loader
 open Argu
 open Shell
 module Main =
@@ -71,11 +70,13 @@ module Main =
             // printfn "%s closing up" "dotnet-mono"
             Shell.killAllCreatedProcesses()
         )
-        AssemblyLoadContext.Default.add_Unloading(fun ctx ->
+        #if NETCOREAPP1_0
+
+        System.Runtime.Loader.AssemblyLoadContext.Default.add_Unloading(fun ctx ->
             // printfn "%s closing up" "dotnet-mono"
             Shell.killAllCreatedProcesses()
         )
-
+        #endif
 
         let errorHandler = ProcessExiter(colorizer = function ErrorCode.HelpText -> None | _ -> Some ConsoleColor.Red)
         let parser = ArgumentParser.Create<CLIArguments>(programName = "dotnet-mono", errorHandler = errorHandler)
