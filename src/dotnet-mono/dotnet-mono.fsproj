@@ -15,12 +15,10 @@
   </PropertyGroup>
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>netcoreapp1.0;net45</TargetFrameworks>
+    <TargetFrameworks>netcoreapp1.0</TargetFrameworks>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp1.0'">
-  
-    <DefineConstants>$(DefineConstants);NETCOREAPP1_0</DefineConstants>
   </PropertyGroup>
 
  <ItemGroup>
