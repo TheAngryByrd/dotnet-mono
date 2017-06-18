@@ -14,6 +14,7 @@ module Main =
         | [<AltCommandLine("-p")>] Project of project:string
         | [<AltCommandLine("-f")>] Framework of framework:string
         | [<AltCommandLine("-r")>] Runtime of runtime:string 
+        | InferRuntime
         | [<AltCommandLine("-c")>] Configuration of configuration:string 
         | Restore
         | [<EqualsAssignment>]FrameworkPathOverride of frameworkPathOverride:string
@@ -25,8 +26,9 @@ module Main =
                     match s with
                     | Project _ -> "(Optional) Specify path to proj file.  Will default to current directory."
                     | Framework _ -> "(Mandatory) Specify a framework.  Most likely net462.  List available here: https://docs.microsoft.com/en-us/nuget/schema/target-frameworks"
-                    | Runtime _ -> "(Optional) Specify a runtime. It will attempt to infer if missing.  List available here: https://github.com/dotnet/docs/blob/master/docs/core/rid-catalog.md"
-                    | Configuration _ -> "(Optional) Specify a configuration. (Debug|Release) Will default to debug"
+                    | Runtime _ -> "(Optional) Specify a runtime. List available here: https://github.com/dotnet/docs/blob/master/docs/core/rid-catalog.md.  You will probably either need to run dotnet restore properly with runtime or pass --restore."
+                    | InferRuntime _ -> "(Optional) Try to run explicitly on the current runtime. You will probably either need to run dotnet restore properly with runtime or pass --restore."
+                    | Configuration _ -> "(Optional) Specify a configuration. (Debug|Release|Others) Will default to Debug"
                     | Restore -> "(Optional) Will attempt dotnet restore"
                     | FrameworkPathOverride _ -> "(Optional) Set FrameworkPathOverride as Environment Variable or as argument.  It will try to infer based on known good locations on osx/linux."
                     | MonoOptions _ -> "(Optional) Flags to be passed to mono."
@@ -67,16 +69,15 @@ module Main =
     [<EntryPoint>]
     let main argv =
         Console.CancelKeyPress.Add(fun _ ->
-            // printfn "%s closing up" "dotnet-mono"
+            printfn "CKP %s closing up" "dotnet-mono"
             Shell.killAllCreatedProcesses()
         )
-        #if NETCOREAPP1_0
 
         System.Runtime.Loader.AssemblyLoadContext.Default.add_Unloading(fun ctx ->
-            // printfn "%s closing up" "dotnet-mono"
+            printfn "ALC %s closing up" "dotnet-mono"
             Shell.killAllCreatedProcesses()
         )
-        #endif
+
 
         let errorHandler = ProcessExiter(colorizer = function ErrorCode.HelpText -> None | _ -> Some ConsoleColor.Red)
         let parser = ArgumentParser.Create<CLIArguments>(programName = "dotnet-mono", errorHandler = errorHandler)
@@ -111,37 +112,38 @@ module Main =
         let framework = results.GetResult <@ Framework @>
         let runtime = 
             match results.TryGetResult <@ Runtime @> with
-            | Some r -> r
-            | None -> inferRuntime ()
+            | Some r -> Some r
+            | None -> 
+                match results.TryGetResult <@ InferRuntime @> with
+                | Some _ -> inferRuntime () |> Some
+                | None -> None
+
+        let runtimeArgs, runtimePath =
+            match runtime with
+            | Some r ->  sprintf "--runtime %s" r, r
+            | None -> String.Empty, String.Empty
         let configuration = results.GetResult (<@ Configuration @>, defaultValue="Debug")
         let monoOptions = results.GetResult (<@ MonoOptions @>, defaultValue="")
 
         let programOptions = results.GetResult (<@ ProgramOptions @>, defaultValue="")
         
+       
         if results.Contains <@ Restore @> then
             dotnetRestore [
-                sprintf "--runtime %s" runtime
+                runtimeArgs
                 project
             ] envVars
-            
+        
         dotnetBuild [
             sprintf "--configuration %s" configuration
-            sprintf "--runtime %s" runtime
+            runtimeArgs
             sprintf "--framework %s" framework
             project
         ] envVars
          
         
-        let buildChunkOutputPath = projectRoot @@ "bin" @@ configuration @@ framework @@ runtime
+        let buildChunkOutputPath = projectRoot @@ "bin" @@ configuration @@ framework @@ runtimePath
         let exe, workingDir = (buildChunkOutputPath |> getExecutable)
         mono workingDir monoOptions exe programOptions envVars
 
-
-        //Microsoft.Build.Exceptions.InvalidProjectFileException: The imported project "/usr/local/share/dotnet/Sdks/FSharp.NET.Sdk/Sdk/Sdk.props" was not found. Confirm that the path in the <Import> declaration is correct, and that the file exists on disk.  /Users/jimmybyrd/Documents/GitHub/dotnetcoreplayground/rc4/rc4.fsproj
-        // let globalProperties =
-        //     dict[
-        //         "MSBuildExtensionsPath", "/usr/local/share/dotnet/"
-        //         "TargetFramework", framework
-        //     ]
-       
-        0 // return an integer exit code
+        0
