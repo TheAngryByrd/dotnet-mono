@@ -49,23 +49,30 @@ USAGE: dotnet-mono [--help] [--project <project>] [--framework <framework>] [--r
 
 OPTIONS:
 
+OPTIONS:
+
     --project, -p <project>
                           (Optional) Specify path to proj file.  Will default to current directory.
     --framework, -f <framework>
-                          (Mandatory) Specify a framework.  Most likely net462.  List available here: https://docs.microsoft.com/en-us/nuget/schema/target-frameworks
+                          (Mandatory) Specify a framework.  Most likely net462.  List available here:
+                          https://docs.microsoft.com/en-us/nuget/schema/target-frameworks
     --runtime, -r <runtime>
-                          (Optional) Specify a runtime. It will attempt to infer if missing.  List available here:
-                          https://github.com/dotnet/docs/blob/master/docs/core/rid-catalog.md
+                          (Optional) Specify a runtime. List available here: https://github.com/dotnet/docs/blob/master/docs/core/rid-catalog.md.  You
+                          will probably either need to run dotnet restore properly with runtime or pass --restore.
+    --inferruntime        (Optional) Try to run explicitly on the current runtime. You will probably either need to run dotnet restore properly with
+                          runtime or pass --restore.
     --configuration, -c <configuration>
-                          (Optional) Specify a configuration. (Debug|Release) Will default to debug
+                          (Optional) Specify a configuration. (Debug|Release|Others) Will default to Debug
     --restore             (Optional) Will attempt dotnet restore
     --frameworkpathoverride=<frameworkPathOverride>
-                          (Optional) Set FrameworkPathOverride as Environment Variable or as argument.  It will try to infer based on known good locations on osx/linux.
+                          (Optional) Set FrameworkPathOverride as Environment Variable or as argument.  It will try to infer based on known good
+                          locations on osx/linux.
     --monooptions, -mo=<monoOptions>
                           (Optional) Flags to be passed to mono.
     --programoptions, -po=<programOptions>
                           (Optional) Flags to be passed to running exe.
     --help                display this list of options.
+
 
 
   ```
