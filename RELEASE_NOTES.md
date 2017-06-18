@@ -1,4 +1,4 @@
-#### 0.1.4-alpha002 - 06.18.2017
+#### 0.1.4-alpha008 - 06.18.2017
 * Don't force --restore to be able to run xplat independent
 
 #### 0.1.2 - 05.04.2017

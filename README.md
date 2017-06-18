@@ -72,3 +72,18 @@ OPTIONS:
   ```
   dotnet watch mono -f net462  -mo="--arch=64 --debug" -po="--help"
   ```
+
+### Killing dotnet mono
+
+Since `dotnet mydevtool` creates a subprocess https://github.com/dotnet/cli/issues/6122 it's best to kill this as a process group rather than just the top level parent. 
+
+* Find dotnet mono parent process, which in the example below is 93625
+
+```
+$ ps aux | grep dotnet
+myusername        93675   0.0  0.0  2434840    796 s014  S+    6:55PM   0:00.00 grep dotnet
+myusername        93658   0.0  0.1   723412  21940 s010  S+    6:55PM   0:00.27 mono /Users/myusername/Documents/GitHub/dotnet-mono/example/bin/Debug/net462/example.exe
+myusername        93627   0.0  0.2  4936872  26432 s010  S+    6:54PM   0:00.44 /usr/local/share/dotnet/dotnet exec --depsfile /Users/myusername/.nuget/packages/.tools/dotnet-mono/0.1.4-alpha006/netcoreapp1.0/dotnet-mono.deps.json --additionalprobingpath /Users/myusername/.nuget/packages /Users/myusername/.nuget/packages/dotnet-mono/0.1.4-alpha006/lib/netcoreapp1.0/dotnet-mono.dll -f net462
+myusername        93625   0.0  0.4  4958660  60736 s010  S+    6:54PM   0:00.63 dotnet mono -f net462
+```
+* `kill -INT -93625`
