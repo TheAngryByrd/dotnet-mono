@@ -20,6 +20,12 @@ Because I really like `dotnet watch` and wanted to run mono apps with it.
 To workaround https://github.com/dotnet/sdk/issues/335 you'll need to  set `FrameworkPathOverride` environment variable to use .net framework assemblies installed by mono
 
   Find where `.../mono/4.5/mscorlib.dll` is on your machine and set `FrameworkPathOverride` as an environment variable
+
+  - Best overall method
+
+    ```
+    export FrameworkPathOverride=$(dirname $(which mono))/../lib/mono/4.5/
+    ```
   - OSX (assuming mono install with xamarin studio): 
 
     ```

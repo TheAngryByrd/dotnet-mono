@@ -115,14 +115,24 @@ module Shell =
         let exitCode = ExecProcessWithLambdas configProcessStartInfoF timeOut true (errors.Add) (messages.Add)
         ProcessResult.New exitCode messages errors
 
+    let joinArgs args =
+        args
+        |> String.concat " "
+
+    let execProcessAndReturnMessages' workingDir argsList program =
+        ExecProcessAndReturnMessages (
+            fun psi ->
+                psi.FileName <- program
+                psi.Arguments <- joinArgs argsList
+                psi.WorkingDirectory <- workingDir
+        ) (TimeSpan.FromSeconds(5.))
+
     let executeOrFail (program : string) (argsList : string list) workingdir envVars=
-        let args =
-            argsList
-            |> String.concat " "
+
         let psi = 
             ProcessStartInfo(
                 FileName = program, 
-                Arguments = args, 
+                Arguments = joinArgs argsList, 
                 //UseShellExecute = false,
                 WorkingDirectory = workingdir)
         envVars
@@ -154,17 +164,16 @@ module Shell =
                 programOptions
             ]
             workingDir
+    let which program =
+        let result =  execProcessAndReturnMessages' "" [program] "which"
+        result.Messages |> Seq.head
+        
     let (@@) path1 path2 = IO.Path.Combine(path1,path2)
     let inferFrameworkPathOverride () =
-        let mscorlib = "mscorlib.dll"
-        let possibleFrameworkPaths =
-            [
-                "/Library/Frameworks/Mono.framework/Versions/4.6.2/lib/mono/4.5/"
-                "/usr/local/Cellar/mono/4.6.2.16/lib/mono/4.5/"
-                "/usr/lib/mono/4.5/"
-            ]
-        possibleFrameworkPaths
-        |> Seq.tryFind (fun p ->File.Exists(p @@ mscorlib))
+        let monoLocation = which "mono" |>  IO.FileInfo
+        let frameworkOverride = monoLocation.Directory.Parent.FullName @@ "lib/mono/4.5/"
+        Some frameworkOverride
+
     let inferRuntime () = 
         let procResult = 
             ExecProcessAndReturnMessages 
