@@ -71,6 +71,7 @@ module Shell =
             proc.StartInfo.FileName <- "mono"
         proc.Start() |> ignore
         startedProcesses.Add(proc.Id, proc.StartTime) |> ignore
+        printfn "Started %s - %d" proc.StartInfo.FileName proc.Id
     let ExecProcessWithLambdas configProcessStartInfoF (timeOut : TimeSpan) silent errorF messageF = 
         use proc = new Process()
         proc.StartInfo.UseShellExecute <- false
@@ -130,7 +131,8 @@ module Shell =
                 psi.Environment.Add(kvp.Key |> string,kvp.Value |> string)
             with _ -> ()
         )
-        let proc = Process.Start(psi)
+        let proc = new Process(StartInfo =psi)
+        start proc
         proc.WaitForExit()
         if proc.ExitCode <> 0 then
             failwithf "%s failed with exit code %d" program proc.ExitCode

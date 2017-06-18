@@ -78,6 +78,8 @@ module Main =
             Shell.killAllCreatedProcesses()
         )
 
+        let currentProcess  = Process.GetCurrentProcess()
+        printfn "dotnet-mono current process: %d" currentProcess.Id
 
         let errorHandler = ProcessExiter(colorizer = function ErrorCode.HelpText -> None | _ -> Some ConsoleColor.Red)
         let parser = ArgumentParser.Create<CLIArguments>(programName = "dotnet-mono", errorHandler = errorHandler)
