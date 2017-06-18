@@ -43,7 +43,6 @@ module Shell =
     let killAllCreatedProcesses() =
 
         let traced = ref false
-            
         for pid, startTime in startedProcesses do
             try
                 let proc = Process.GetProcessById pid
