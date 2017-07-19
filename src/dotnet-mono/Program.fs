@@ -50,20 +50,32 @@ module Main =
         getProjectFile directory
 
 
-    let getExecutable path =
-        let exeFiles =
-            IO.Directory.GetFiles(path, "*.exe")
-
-        if exeFiles.Length = 0 then    
-            failwith "No valid exes found"
+    let getAssemblyName (project : string) =
         
-        elif exeFiles.Length > 1 then   
-            failwith "Too many exe files"
-        let fi= 
-            exeFiles
-            |> Seq.head
-            |> FileInfo
-        (fi |> string, fi.Directory |> string)                
+        let doc = Xml.XmlDocument()
+        use projStream =File.OpenRead(project)
+        doc.Load(projStream)
+        doc
+            .GetElementsByTagName("AssemblyName")
+            .Cast<Xml.XmlNode>()
+        |> Seq.tryHead
+        |> Option.map(fun x -> x.InnerText)
+
+    let getProjectName (project : string) =
+        IO.Path.GetFileNameWithoutExtension project 
+
+    let inline (|?) (a: 'a option) b = 
+        if a.IsSome then a.Value else b 
+
+    let getExecutable project path =
+        let exe = getAssemblyName project |?  (getProjectName project) |> sprintf "%s.exe"
+
+        let exePath = Path.Combine(path, exe)
+
+        if File.Exists exePath |> not then 
+            failwithf "No exe founds %s" exePath
+
+        exePath             
 
 
     [<EntryPoint>]
@@ -145,7 +157,7 @@ module Main =
          
         
         let buildChunkOutputPath = projectRoot @@ "bin" @@ configuration @@ framework @@ runtimePath
-        let exe, workingDir = (buildChunkOutputPath |> getExecutable)
-        mono workingDir monoOptions exe programOptions envVars
+        let exe = buildChunkOutputPath |> getExecutable project
+        mono buildChunkOutputPath monoOptions exe programOptions envVars
 
         0
