@@ -29,6 +29,9 @@
     <PackageReference Include="FSharp.Core" Version="4.1.*" />
     <PackageReference Include="FSharp.NET.Sdk" Version="1.0.*" PrivateAssets="All" />
     <PackageReference Include="Argu" Version="3.7.*" />
+
+    <PackageReference Include="System.Xml.XmlDocument" Version="4.3.*" />
+    
     <DotNetCliToolReference Include="Microsoft.DotNet.Watcher.Tools" Version="1.0.0"/>
   </ItemGroup>
 

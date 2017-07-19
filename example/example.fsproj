@@ -2,6 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFrameworks>netcoreapp1.0;net462</TargetFrameworks>
+    <AssemblyName>Foobar</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -9,7 +10,7 @@
     <PackageReference Include="FSharp.Core" Version="4.1.*" />
     <PackageReference Include="Suave" Version="2.*"/>
     <DotNetCliToolReference Include="Microsoft.DotNet.Watcher.Tools" Version="1.0.0"/>
-    <DotNetCliToolReference Include="dotnet-mono" Version="0.1.4-alpha014"/>
+    <DotNetCliToolReference Include="dotnet-mono" Version="0.1.5-alpha005"/>
   </ItemGroup>
 
   <ItemGroup>
