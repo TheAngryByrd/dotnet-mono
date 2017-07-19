@@ -1,4 +1,4 @@
-#### 0.1.5-beta001 - 07.19.2017
+#### 0.1.5 - 07.19.2017
 * Better finding exe logic (https://github.com/TheAngryByrd/dotnet-mono/pull/9)
 
 #### 0.1.4 - 06.18.2017
