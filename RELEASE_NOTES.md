@@ -1,3 +1,6 @@
+#### 0.1.6-alpha001 - 08.04.2017
+* Better logging
+
 #### 0.1.5 - 07.19.2017
 * Better finding exe logic (https://github.com/TheAngryByrd/dotnet-mono/pull/9)
 

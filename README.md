@@ -44,10 +44,9 @@ To workaround https://github.com/dotnet/sdk/issues/335 you'll need to  set `Fram
   
   ### Options
   ```
-USAGE: dotnet-mono [--help] [--project <project>] [--framework <framework>] [--runtime <runtime>] [--configuration <configuration>] [--restore]
-                   [--frameworkpathoverride=<frameworkPathOverride>] [--monooptions=<monoOptions>] [--programoptions=<programOptions>]
-
-OPTIONS:
+USAGE: dotnet-mono [--help] [--project <project>] [--framework <framework>] [--runtime <runtime>] [--inferruntime] [--configuration <configuration>]
+                   [--restore] [--frameworkpathoverride=<frameworkPathOverride>] [--monooptions=<monoOptions>] [--programoptions=<programOptions>]
+                   [--loggerlevel <logLevel>]
 
 OPTIONS:
 
@@ -71,6 +70,8 @@ OPTIONS:
                           (Optional) Flags to be passed to mono.
     --programoptions, -po=<programOptions>
                           (Optional) Flags to be passed to running exe.
+    --loggerlevel <logLevel>
+                          (Optional) LogLevel for dotnet-mono defaults to Info (Verbose|Debug|Info|Warn|Error|Fatal)
     --help                display this list of options.
 
 

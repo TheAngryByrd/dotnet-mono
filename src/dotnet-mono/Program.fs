@@ -9,7 +9,13 @@ open System.IO
 open System.Text
 open Argu
 open Shell
+open Logary.Facade
+open Logary.Facade.Message
+open ProcessLogging
 module Main =
+    
+
+    
     type CLIArguments =
         | [<AltCommandLine("-p")>] Project of project:string
         | [<AltCommandLine("-f")>] Framework of framework:string
@@ -20,6 +26,7 @@ module Main =
         | [<EqualsAssignment>]FrameworkPathOverride of frameworkPathOverride:string
         | [<EqualsAssignment>][<AltCommandLine("-mo")>] MonoOptions of monoOptions:string 
         | [<EqualsAssignment>][<AltCommandLine("-po")>] ProgramOptions of programOptions:string 
+        | LoggerLevel of logLevel:string
         with
             interface IArgParserTemplate with
                 member s.Usage =
@@ -33,6 +40,7 @@ module Main =
                     | FrameworkPathOverride _ -> "(Optional) Set FrameworkPathOverride as Environment Variable or as argument.  It will try to infer based on known good locations on osx/linux."
                     | MonoOptions _ -> "(Optional) Flags to be passed to mono."
                     | ProgramOptions _ -> "(Optional) Flags to be passed to running exe."
+                    | LoggerLevel _ -> "(Optional) LogLevel for dotnet-mono defaults to Info (Verbose|Debug|Info|Warn|Error|Fatal)"
 
     let getProjectFile directory =
         let projectFiles = Directory.GetFiles(directory, "*.*proj");
@@ -65,7 +73,10 @@ module Main =
         IO.Path.GetFileNameWithoutExtension project 
 
     let inline (|?) (a: 'a option) b = 
-        if a.IsSome then a.Value else b 
+        match a with
+        | Some a' -> a'
+        | None -> b
+        
 
     let getExecutable project path =
         let exe = getAssemblyName project |?  (getProjectName project) |> sprintf "%s.exe"
@@ -78,31 +89,61 @@ module Main =
         exePath             
 
 
-    [<EntryPoint>]
-    let main argv =
+    let setupCloseSignalers () =
         Console.CancelKeyPress.Add(fun _ ->
-            printfn "CKP %s closing up" "dotnet-mono"
+            Message.eventX "Handling CancelKeyPress..." LogLevel.Info
+            |> logger.logSync
             Shell.killAllCreatedProcesses()
         )
 
         System.Runtime.Loader.AssemblyLoadContext.Default.add_Unloading(fun ctx ->
-            printfn "ALC %s closing up" "dotnet-mono"
+            Message.eventX "Handling AssemblyLoadContext Unloading..." LogLevel.Info
+            |> logger.logSync
             Shell.killAllCreatedProcesses()
         )
 
-        let currentProcess  = Process.GetCurrentProcess()
-        printfn "dotnet-mono current process: %d" currentProcess.Id
+
+
+
+    [<EntryPoint>]
+    let main argv =
 
         let errorHandler = ProcessExiter(colorizer = function ErrorCode.HelpText -> None | _ -> Some ConsoleColor.Red)
         let parser = ArgumentParser.Create<CLIArguments>(programName = "dotnet-mono", errorHandler = errorHandler)
-
         let results = parser.Parse(argv)
+
+       
+        match results.TryGetResult<@ LoggerLevel @> with
+        | Some ll ->
+            let logaryLevel=
+                ll
+                |> LogLevel.ofString
+            logger <- Log.create logaryLevel "dotnet-mono"
+        | None -> ()
+
+        Message.eventX "arguments parsed: {args}" LogLevel.Debug
+        |> setField "args" results
+        |> logger.logSync
+
+
+        setupCloseSignalers ()
+
+        Message.eventX "dotnet-mono current process id: {id}" LogLevel.Info
+        |> Message.setField "id" (Process.GetCurrentProcess()).Id
+        |> logger.logSync
+
+
+
 
         let project = 
             match results.TryGetResult <@ Project @> with
             | Some p when p.EndsWith("proj") -> p
             | Some p -> getProjectFile p
             | _ -> getDefaultProject ()
+
+        Message.eventX "Project file found: {project}" LogLevel.Debug
+        |> setField "project" project
+        |> logger.logSync
 
         let frameworkPathOverride =
             match Environment.getEnvironmentVariable "FrameworkPathOverride" with
@@ -117,10 +158,17 @@ module Main =
                         parser.PrintUsage() |> printfn "%s"
                         failwith "Could not find FrameworkPathOverride in Environemnt, Argument, or Inferring"
 
+
+        Message.eventX "FrameworkPathOverride: {FrameworkPathOverride}" LogLevel.Debug
+        |> setField "FrameworkPathOverride" frameworkPathOverride
+        |> logger.logSync
+
         let envVars = 
             Environment.GetEnvironmentVariables()
             |> Seq.cast<DictionaryEntry> 
             |> Seq.append([DictionaryEntry("FrameworkPathOverride",frameworkPathOverride)])
+
+            
         let projectRoot = (project |> IO.FileInfo).DirectoryName |> string
 
         let framework = results.GetResult <@ Framework @>
@@ -147,7 +195,10 @@ module Main =
                 runtimeArgs
                 project
             ] envVars
-        
+
+
+
+
         dotnetBuild [
             sprintf "--configuration %s" configuration
             runtimeArgs
