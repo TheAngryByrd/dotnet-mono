@@ -12,6 +12,7 @@ open Shell
 open Logary.Facade
 open Logary.Facade.Message
 open ProcessLogging
+open Dotnet.ProjInfo
 module Main =
     
 
@@ -58,7 +59,34 @@ module Main =
         getProjectFile directory
 
 
+
+    let msbuildExec projDir =
+        Dotnet.ProjInfo.Inspect.dotnetMsbuild <| 
+            fun exe args ->
+                let result = execProcessAndReturnMessages' projDir args exe 
+                result.ExitCode,  (projDir, exe, args |> String.concat " ")
+    let gp () = Dotnet.ProjInfo.Inspect.getProperties (["AssemblyName"; "TargetFrameworks"; "TargetFramework"])
+
+    type ProjInfo = {
+        TargetFrameworks : string list
+        AssemblyName : string option
+    }
+    let getProjInfo additionalMSBuildProps (project : string)=
+        let projDir = Path.GetDirectoryName project
+        let log = ignore
+
+        let additionalArgs = additionalMSBuildProps |> List.map (Dotnet.ProjInfo.Inspect.MSBuild.MSbuildCli.Property)
+
+        let result =
+            project
+            |> Dotnet.ProjInfo.Inspect.getProjectInfo log (msbuildExec projDir) gp additionalArgs
+
+        match result with
+        | Result.Ok (Inspect.GetResult.Properties props) -> props |> Map.ofList
+        | _ -> Map.empty
+
     let getAssemblyName (project : string) =
+        printfn "project %A" <| getProjInfo [] project
         
         let doc = Xml.XmlDocument()
         use projStream =File.OpenRead(project)
