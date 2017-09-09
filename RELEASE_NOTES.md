@@ -1,4 +1,4 @@
-#### 0.1.6-alpha001 - 09.04.2017
+#### 0.1.6 - 09.04.2017
 * Better logging (https://github.com/TheAngryByrd/dotnet-mono/pull/13)
 
 #### 0.1.5 - 07.19.2017
