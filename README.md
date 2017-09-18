@@ -27,35 +27,8 @@ or use [paket to add clitool](https://fsprojects.github.io/Paket/nuget-dependenc
 clitool dotnet-fable 0.1.5
 ```
 
-*Now* this tool will attempt to resolve `FrameworkPathOverride` for you.  If these defaults don't work (because of specific folder paths) you can still used the workaround below.
 
-
-To workaround https://github.com/dotnet/sdk/issues/335 you'll need to  set `FrameworkPathOverride` environment variable to use .net framework assemblies installed by mono
-
-  Find where `.../mono/4.5/mscorlib.dll` is on your machine and set `FrameworkPathOverride` as an environment variable
-
-  - Best overall method
-
-    ```
-    export FrameworkPathOverride=$(dirname $(which mono))/../lib/mono/4.5/
-    ```
-  - OSX (assuming mono install with xamarin studio): 
-
-    ```
-    export FrameworkPathOverride=/Library/Frameworks/Mono.framework/Versions/4.6.2/lib/mono/4.5/
-    ```
-  - OSX (assuming mono installed with brew): 
-
-    ```
-    export FrameworkPathOverride=/usr/local/Cellar/mono/4.6.2.16/lib/mono/4.5/
-    ```
-  - Debian: 
-
-    ```
-    export FrameworkPathOverride=/usr/lib/mono/4.5/
-    ``` 
-  
-  ### Options
+### Options
   ```
 USAGE: dotnet-mono [--help] [--project <project>] [--framework <framework>] [--runtime <runtime>] [--inferruntime] [--configuration <configuration>]
                    [--restore] [--frameworkpathoverride=<frameworkPathOverride>] [--monooptions=<monoOptions>] [--programoptions=<programOptions>]
@@ -89,16 +62,48 @@ OPTIONS:
 
 
 
-  ```
-  ### Example Usage
-  ```
-  dotnet mono -f net462  -mo="--arch=64 --debug" -po="--help"
-  ```
+```
+### Example Usage
+```
+dotnet mono -f net462  -mo="--arch=64 --debug" -po="--help"
+```
 
-  or with the `dotnet watch` tool to constantly rebuild/run your mono app
-  ```
-  dotnet watch mono -f net462  -mo="--arch=64 --debug" -po="--help"
-  ```
+or with the `dotnet watch` tool to constantly rebuild/run your mono app
+```
+dotnet watch mono -f net462  -mo="--arch=64 --debug" -po="--help"
+```
+
+
+### A word on FrameworkPathOverride
+
+*Now* this tool will attempt to resolve `FrameworkPathOverride` for you.  If these defaults don't work (because of specific folder paths) you can still used the workaround below.
+
+
+To workaround https://github.com/dotnet/sdk/issues/335 you'll need to  set `FrameworkPathOverride` environment variable to use .net framework assemblies installed by mono
+
+  Find where `.../mono/4.5/mscorlib.dll` is on your machine and set `FrameworkPathOverride` as an environment variable
+
+  - Best overall method
+
+    ```
+    export FrameworkPathOverride=$(dirname $(which mono))/../lib/mono/4.5/
+    ```
+  - OSX (assuming mono install with xamarin studio): 
+
+    ```
+    export FrameworkPathOverride=/Library/Frameworks/Mono.framework/Versions/4.6.2/lib/mono/4.5/
+    ```
+  - OSX (assuming mono installed with brew): 
+
+    ```
+    export FrameworkPathOverride=/usr/local/Cellar/mono/4.6.2.16/lib/mono/4.5/
+    ```
+  - Debian: 
+
+    ```
+    export FrameworkPathOverride=/usr/lib/mono/4.5/
+    ``` 
+  
 
 ### Killing dotnet mono
 
