@@ -13,6 +13,19 @@ Because I really like `dotnet watch` and wanted to run mono apps with it.
 
 ## How
 
+Add this element your csproj/fsproj/vbproj.
+
+```
+  <ItemGroup>
+    <DotNetCliToolReference Include="dotnet-mono" Version="*" />
+  </ItemGroup>
+```
+
+or use [paket to add clitool](https://fsprojects.github.io/Paket/nuget-dependencies.html#Special-case-CLI-tools) via paket.depedencies 
+
+```
+clitool dotnet-fable 0.1.5
+```
 
 *Now* this tool will attempt to resolve `FrameworkPathOverride` for you.  If these defaults don't work (because of specific folder paths) you can still used the workaround below.
 
