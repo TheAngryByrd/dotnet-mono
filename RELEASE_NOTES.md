@@ -1,3 +1,6 @@
+#### 0.2.0-alpha001 - 09.26.2017
+* netcoreapp2.0 support (https://github.com/TheAngryByrd/dotnet-mono/pull/15)
+
 #### 0.1.6 - 09.04.2017
 * Better logging (https://github.com/TheAngryByrd/dotnet-mono/pull/13)
 
