@@ -24,7 +24,7 @@ Add this element your csproj/fsproj/vbproj.
 or use [paket to add clitool](https://fsprojects.github.io/Paket/nuget-dependencies.html#Special-case-CLI-tools) via paket.depedencies 
 
 ```
-clitool dotnet-fable 0.1.5
+clitool dotnet-mono 0.1.5
 ```
 
 
