@@ -1,5 +1,23 @@
 source https://www.nuget.org/api/v2
+nuget Argu >= 3.7.0
+nuget Dotnet.ProjInfo 0.7.4
+nuget FSharp.Core >= 4.1.0
+nuget FSharp.NET.Sdk >= 1.0.0
+clitool Microsoft.DotNet.Watcher.Tools 1.0.0
+nuget Suave >= 2.0
+nuget System.Runtime.Loader 4.3.0
+nuget System.Xml.XmlDocument >= 4.3.0
+nuget Microsoft.AspNetCore.Server.Kestrel
 
 group Build
     source https://www.nuget.org/api/v2
     nuget FAKE
+    nuget Hopac
+    nuget Http.fs
+    nuget Newtonsoft.Json
+
+group Test
+    source https://www.nuget.org/api/v2
+    nuget Expecto
+    nuget Unquote
+    
