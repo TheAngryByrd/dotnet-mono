@@ -1,4 +1,4 @@
-#### 0.2.0-alpha002 - 09.26.2017
+#### 0.2.0 - 09.26.2017
 * netcoreapp2.0 support (https://github.com/TheAngryByrd/dotnet-mono/pull/15)
 * target lowest FSharp.Core possible : 4.1.17
 
