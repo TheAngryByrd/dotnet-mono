@@ -1,3 +1,6 @@
+#### 0.2.1 - 10.03.2017
+* added prefercliruntime (https://github.com/TheAngryByrd/dotnet-mono/pull/17)
+
 #### 0.2.0 - 09.26.2017
 * netcoreapp2.0 support (https://github.com/TheAngryByrd/dotnet-mono/pull/15)
 * target lowest FSharp.Core possible : 4.1.17
