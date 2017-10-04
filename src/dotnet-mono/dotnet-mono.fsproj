@@ -25,6 +25,11 @@
     <Compile Include="Logging.fs" />
     <Compile Include="Helpers.fs" />
     <Compile Include="Program.fs" />
+    
+    <Content Include="prefercliruntime">
+      <PackagePath>prefercliruntime</PackagePath>
+      <Pack>true</Pack>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="FSharp.Core" Version="4.1.17" />
