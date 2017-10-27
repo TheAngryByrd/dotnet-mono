@@ -10,7 +10,7 @@
     <PackageReference Include="FSharp.Core" Version="4.1.*" />
     <PackageReference Include="Suave" Version="2.*"/>
     <DotNetCliToolReference Include="Microsoft.DotNet.Watcher.Tools" Version="1.0.0"/>
-    <DotNetCliToolReference Include="dotnet-mono" Version="0.1.6-alpha001"/>
+    <DotNetCliToolReference Include="dotnet-mono" Version="0.3.0-alpha001"/>
   </ItemGroup>
 
   <ItemGroup>
