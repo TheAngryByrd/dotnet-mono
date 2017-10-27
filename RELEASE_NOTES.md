@@ -1,4 +1,4 @@
-#### 0.3.0-alpha001 - 10.27.2017
+#### 0.3.0 - 10.27.2017
 * Added --no-restore and --no-build flags (https://github.com/TheAngryByrd/dotnet-mono/pull/19)
 
 #### 0.2.1 - 10.03.2017
