@@ -1,3 +1,6 @@
+#### 0.3.0-alpha001 - 10.27.2017
+* Added --no-restore and --no-build flags 
+
 #### 0.2.1 - 10.03.2017
 * added prefercliruntime (https://github.com/TheAngryByrd/dotnet-mono/pull/17)
 

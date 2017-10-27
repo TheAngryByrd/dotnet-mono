@@ -24,10 +24,12 @@ module Main =
         | InferRuntime
         | [<AltCommandLine("-c")>] Configuration of configuration:string 
         | Restore
+        | No_Restore
         | [<EqualsAssignment>]FrameworkPathOverride of frameworkPathOverride:string
         | [<EqualsAssignment>][<AltCommandLine("-mo")>] MonoOptions of monoOptions:string 
         | [<EqualsAssignment>][<AltCommandLine("-po")>] ProgramOptions of programOptions:string 
         | LoggerLevel of logLevel:string
+        | No_Build
         with
             interface IArgParserTemplate with
                 member s.Usage =
@@ -38,10 +40,12 @@ module Main =
                     | InferRuntime _ -> "(Optional) Try to run explicitly on the current runtime. You will probably either need to run dotnet restore properly with runtime or pass --restore."
                     | Configuration _ -> "(Optional) Specify a configuration. (Debug|Release|Others) Will default to Debug"
                     | Restore -> "(Optional) Will attempt dotnet restore"
+                    | No_Restore -> "(Optional) Will pass --no-restore to dotnet build."
                     | FrameworkPathOverride _ -> "(Optional) Set FrameworkPathOverride as Environment Variable or as argument.  It will try to infer based on known good locations on osx/linux."
                     | MonoOptions _ -> "(Optional) Flags to be passed to mono."
                     | ProgramOptions _ -> "(Optional) Flags to be passed to running exe."
                     | LoggerLevel _ -> "(Optional) LogLevel for dotnet-mono defaults to Info (Verbose|Debug|Info|Warn|Error|Fatal)"
+                    | No_Build -> "(Optional) Will attempt to skip dotnet build."
 
     let getProjectFile directory =
         let projectFiles = Directory.GetFiles(directory, "*.*proj");
@@ -225,14 +229,14 @@ module Main =
             ] envVars
 
 
-
-
-        dotnetBuild [
-            sprintf "--configuration %s" configuration
-            runtimeArgs
-            sprintf "--framework %s" framework
-            project
-        ] envVars
+        if not <| results.Contains <@ No_Build @> then
+            dotnetBuild [
+                (if results.Contains <@ No_Restore @> then"--no-restore" else String.Empty) 
+                sprintf "--configuration %s" configuration
+                runtimeArgs
+                sprintf "--framework %s" framework
+                project
+            ] envVars
          
         
         let buildChunkOutputPath = projectRoot @@ "bin" @@ configuration @@ framework @@ runtimePath
