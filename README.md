@@ -24,40 +24,37 @@ Add this element your csproj/fsproj/vbproj.
 or use [paket to add clitool](https://fsprojects.github.io/Paket/nuget-dependencies.html#Special-case-CLI-tools) via paket.depedencies 
 
 ```
-clitool dotnet-mono 0.1.5
+clitool dotnet-mono
 ```
 
 
 ### Options
   ```
-USAGE: dotnet-mono [--help] [--project <project>] [--framework <framework>] [--runtime <runtime>] [--inferruntime] [--configuration <configuration>]
-                   [--restore] [--frameworkpathoverride=<frameworkPathOverride>] [--monooptions=<monoOptions>] [--programoptions=<programOptions>]
-                   [--loggerlevel <logLevel>]
+USAGE: dotnet-mono [--help] [--project <project>] [--framework <framework>] [--runtime <runtime>] [--inferruntime] [--configuration <configuration>] [--restore] [--no-restore] [--frameworkpathoverride=<frameworkPathOverride>] [--monooptions=<monoOptions>]
+                   [--programoptions=<programOptions>] [--loggerlevel <logLevel>] [--no-build]
 
 OPTIONS:
 
     --project, -p <project>
                           (Optional) Specify path to proj file.  Will default to current directory.
     --framework, -f <framework>
-                          (Mandatory) Specify a framework.  Most likely net462.  List available here:
-                          https://docs.microsoft.com/en-us/nuget/schema/target-frameworks
+                          (Mandatory) Specify a framework.  Most likely net462.  List available here: https://docs.microsoft.com/en-us/nuget/schema/target-frameworks
     --runtime, -r <runtime>
-                          (Optional) Specify a runtime. List available here: https://github.com/dotnet/docs/blob/master/docs/core/rid-catalog.md.  You
-                          will probably either need to run dotnet restore properly with runtime or pass --restore.
-    --inferruntime        (Optional) Try to run explicitly on the current runtime. You will probably either need to run dotnet restore properly with
-                          runtime or pass --restore.
+                          (Optional) Specify a runtime. List available here: https://github.com/dotnet/docs/blob/master/docs/core/rid-catalog.md.  You will probably either need to run dotnet restore properly with runtime or pass --restore.
+    --inferruntime        (Optional) Try to run explicitly on the current runtime. You will probably either need to run dotnet restore properly with runtime or pass --restore.
     --configuration, -c <configuration>
                           (Optional) Specify a configuration. (Debug|Release|Others) Will default to Debug
     --restore             (Optional) Will attempt dotnet restore
+    --no-restore          (Optional) Will pass --no-restore to dotnet build.
     --frameworkpathoverride=<frameworkPathOverride>
-                          (Optional) Set FrameworkPathOverride as Environment Variable or as argument.  It will try to infer based on known good
-                          locations on osx/linux.
+                          (Optional) Set FrameworkPathOverride as Environment Variable or as argument.  It will try to infer based on known good locations on osx/linux.
     --monooptions, -mo=<monoOptions>
                           (Optional) Flags to be passed to mono.
     --programoptions, -po=<programOptions>
                           (Optional) Flags to be passed to running exe.
     --loggerlevel <logLevel>
                           (Optional) LogLevel for dotnet-mono defaults to Info (Verbose|Debug|Info|Warn|Error|Fatal)
+    --no-build            (Optional) Will attempt to skip dotnet build.
     --help                display this list of options.
 
 
