@@ -90,7 +90,7 @@ module Main =
         | _ -> Map.empty
 
     let getAssemblyName (project : string) =
-        printfn "project %A" <| getProjInfo [] project
+        //printfn "project %A" <| getProjInfo [] project
         
         let doc = Xml.XmlDocument()
         use projStream =File.OpenRead(project)
