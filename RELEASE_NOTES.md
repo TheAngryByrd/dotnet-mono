@@ -1,3 +1,6 @@
+### 0.3.1-beta001 - 11.21.2017
+* [Revert using proj-info](https://github.com/TheAngryByrd/dotnet-mono/pull/21)
+
 #### 0.3.0 - 10.27.2017
 * Added --no-restore and --no-build flags (https://github.com/TheAngryByrd/dotnet-mono/pull/19)
 
