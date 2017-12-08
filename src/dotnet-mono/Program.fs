@@ -69,7 +69,7 @@ module Main =
             fun exe args ->
                 let result = execProcessAndReturnMessages' projDir args exe 
                 result.ExitCode,  (projDir, exe, args |> String.concat " ")
-    let gp () = Dotnet.ProjInfo.Inspect.getProperties (["AssemblyName"; "TargetFrameworks"; "TargetFramework"])
+    let gp () = Dotnet.ProjInfo.Inspect.getProperties (["AssemblyName"; "TargetFrameworks"; "TargetFramework"; "RunWorkingDirectory"])
 
     type ProjInfo = {
         TargetFrameworks : string list
@@ -90,7 +90,7 @@ module Main =
         | _ -> Map.empty
 
     let getAssemblyName (project : string) =
-        //printfn "project %A" <| getProjInfo [] project
+        // printfn "project %A" <| getProjInfo [] project
         
         let doc = Xml.XmlDocument()
         use projStream =File.OpenRead(project)
@@ -135,8 +135,6 @@ module Main =
         )
 
 
-
-
     [<EntryPoint>]
     let main argv =
 
@@ -173,9 +171,14 @@ module Main =
             | Some p -> getProjectFile p
             | _ -> getDefaultProject ()
 
+
         Message.eventX "Project file found: {project}" LogLevel.Debug
         |> setField "project" project
         |> logger.logSync
+
+
+        
+
 
         let frameworkPathOverride =
             match Environment.getEnvironmentVariable "FrameworkPathOverride" with
@@ -201,7 +204,7 @@ module Main =
             |> Seq.append([DictionaryEntry("FrameworkPathOverride",frameworkPathOverride)])
 
             
-        let projectRoot = (project |> IO.FileInfo).DirectoryName |> string
+
 
         let framework = results.GetResult <@ Framework @>
         let runtime = 
@@ -212,14 +215,31 @@ module Main =
                 | Some _ -> inferRuntime () |> Some
                 | None -> None
 
-        let runtimeArgs, runtimePath =
+        let runtimeArgs =
             match runtime with
-            | Some r ->  sprintf "--runtime %s" r, r
-            | None -> String.Empty, String.Empty
+            | Some r ->  sprintf "--runtime %s" r
+            | None -> String.Empty
         let configuration = results.GetResult (<@ Configuration @>, defaultValue="Debug")
         let monoOptions = results.GetResult (<@ MonoOptions @>, defaultValue="")
 
         let programOptions = results.GetResult (<@ ProgramOptions @>, defaultValue="")
+
+        // https://github.com/dotnet/cli/blob/master/src/dotnet/commands/dotnet-run/RunCommand.cs
+        let globalProperties = 
+            [
+                "Configuration", configuration
+                "TargetFramework",framework
+                "MSBuildExtensionsPath", IO.Path.GetDirectoryName(Environment.GetEnvironmentVariable("MSBUILD_EXE_PATH"))       
+            ]
+            |> dict
+
+        let proj = Microsoft.Build.Evaluation.Project(project,globalProperties,null)
+
+        let runExeLocation =  proj.GetPropertyValue("RunCommand")
+
+        Message.eventX "Run Location : {RunCommand}" LogLevel.Debug
+        |> Message.setField "RunCommand" runExeLocation
+        |> logger.logSync
         
        
         if results.Contains <@ Restore @> then
@@ -239,8 +259,7 @@ module Main =
             ] envVars
          
         
-        let buildChunkOutputPath = projectRoot @@ "bin" @@ configuration @@ framework @@ runtimePath
-        let exe = buildChunkOutputPath |> getExecutable project
-        mono buildChunkOutputPath monoOptions exe programOptions envVars
+
+        mono (IO.Path.GetDirectoryName runExeLocation) monoOptions runExeLocation programOptions envVars
 
         0
