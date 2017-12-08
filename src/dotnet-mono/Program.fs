@@ -1,22 +1,15 @@
 ﻿namespace DotnetMono
 open System
-open System.Linq
 open System.Collections
-open System.Collections.Concurrent
-open System.Collections.Generic
 open System.Diagnostics
 open System.IO
-open System.Text
 open Argu
 open Shell
 open Logary.Facade
 open Logary.Facade.Message
 open ProcessLogging
-open Dotnet.ProjInfo
 module Main =
-    
-
-    
+        
     type CLIArguments =
         | [<AltCommandLine("-p")>] Project of project:string
         | [<AltCommandLine("-f")>] Framework of framework:string
@@ -63,64 +56,6 @@ module Main =
         getProjectFile directory
 
 
-
-    let msbuildExec projDir =
-        Dotnet.ProjInfo.Inspect.dotnetMsbuild <| 
-            fun exe args ->
-                let result = execProcessAndReturnMessages' projDir args exe 
-                result.ExitCode,  (projDir, exe, args |> String.concat " ")
-    let gp () = Dotnet.ProjInfo.Inspect.getProperties (["AssemblyName"; "TargetFrameworks"; "TargetFramework"; "RunWorkingDirectory"])
-
-    type ProjInfo = {
-        TargetFrameworks : string list
-        AssemblyName : string option
-    }
-    let getProjInfo additionalMSBuildProps (project : string)=
-        let projDir = Path.GetDirectoryName project
-        let log = ignore
-
-        let additionalArgs = additionalMSBuildProps |> List.map (Dotnet.ProjInfo.Inspect.MSBuild.MSbuildCli.Property)
-
-        let result =
-            project
-            |> Dotnet.ProjInfo.Inspect.getProjectInfo log (msbuildExec projDir) gp additionalArgs
-
-        match result with
-        | Result.Ok (Inspect.GetResult.Properties props) -> props |> Map.ofList
-        | _ -> Map.empty
-
-    let getAssemblyName (project : string) =
-        // printfn "project %A" <| getProjInfo [] project
-        
-        let doc = Xml.XmlDocument()
-        use projStream =File.OpenRead(project)
-        doc.Load(projStream)
-        doc
-            .GetElementsByTagName("AssemblyName")
-            .Cast<Xml.XmlNode>()
-        |> Seq.tryHead
-        |> Option.map(fun x -> x.InnerText)
-
-    let getProjectName (project : string) =
-        IO.Path.GetFileNameWithoutExtension project 
-
-    let inline (|?) (a: 'a option) b = 
-        match a with
-        | Some a' -> a'
-        | None -> b
-        
-
-    let getExecutable project path =
-        let exe = getAssemblyName project |?  (getProjectName project) |> sprintf "%s.exe"
-
-        let exePath = Path.Combine(path, exe)
-
-        if File.Exists exePath |> not then 
-            failwithf "No exe founds %s" exePath
-
-        exePath             
-
-
     let setupCloseSignalers () =
         Console.CancelKeyPress.Add(fun _ ->
             Message.eventX "Handling CancelKeyPress..." LogLevel.Info
@@ -128,7 +63,7 @@ module Main =
             Shell.killAllCreatedProcesses()
         )
 
-        System.Runtime.Loader.AssemblyLoadContext.Default.add_Unloading(fun ctx ->
+        System.Runtime.Loader.AssemblyLoadContext.Default.add_Unloading(fun _ ->
             Message.eventX "Handling AssemblyLoadContext Unloading..." LogLevel.Info
             |> logger.logSync
             Shell.killAllCreatedProcesses()
@@ -141,7 +76,6 @@ module Main =
         let errorHandler = ProcessExiter(colorizer = function ErrorCode.HelpText -> None | _ -> Some ConsoleColor.Red)
         let parser = ArgumentParser.Create<CLIArguments>(programName = "dotnet-mono", errorHandler = errorHandler)
         let results = parser.Parse(argv)
-
        
         match results.TryGetResult<@ LoggerLevel @> with
         | Some ll ->
@@ -162,22 +96,15 @@ module Main =
         |> Message.setField "id" (Process.GetCurrentProcess()).Id
         |> logger.logSync
 
-
-
-
         let project = 
             match results.TryGetResult <@ Project @> with
             | Some p when p.EndsWith("proj") -> p
             | Some p -> getProjectFile p
             | _ -> getDefaultProject ()
 
-
         Message.eventX "Project file found: {project}" LogLevel.Debug
         |> setField "project" project
         |> logger.logSync
-
-
-        
 
 
         let frameworkPathOverride =
@@ -202,9 +129,6 @@ module Main =
             Environment.GetEnvironmentVariables()
             |> Seq.cast<DictionaryEntry> 
             |> Seq.append([DictionaryEntry("FrameworkPathOverride",frameworkPathOverride)])
-
-            
-
 
         let framework = results.GetResult <@ Framework @>
         let runtime = 
@@ -257,8 +181,6 @@ module Main =
                 sprintf "--framework %s" framework
                 project
             ] envVars
-         
-        
 
         mono (IO.Path.GetDirectoryName runExeLocation) monoOptions runExeLocation programOptions envVars
 
