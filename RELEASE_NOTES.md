@@ -1,3 +1,6 @@
+### 0.3.2-alpha001 - 12.07.2017
+* Support Platform and potentially other build locations (https://github.com/TheAngryByrd/dotnet-mono/pull/24)
+
 ### 0.3.1 - 11.21.2017
 * [Revert using proj-info](https://github.com/TheAngryByrd/dotnet-mono/pull/21)
 
