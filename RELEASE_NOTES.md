@@ -1,5 +1,5 @@
 ### 0.3.3-alpha001 - 12.19.2017
-* Foo
+* Add Purge System.Net.Http.dll (https://github.com/TheAngryByrd/dotnet-mono/pull/26)
 
 ### 0.3.2 - 12.11.2017
 * Support Platform and potentially other build locations (https://github.com/TheAngryByrd/dotnet-mono/pull/24)
