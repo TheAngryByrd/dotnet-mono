@@ -112,7 +112,7 @@ Target "Release" (fun _ ->
 "Clean"
   ==> "DotnetRestore"
   ==> "DotnetBuild"
-  ==> "DotnetTest"
+//   ==> "DotnetTest"
   ==> "DotnetPack"
   ==> "Publish"
   ==> "Release"
