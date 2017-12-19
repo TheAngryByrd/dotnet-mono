@@ -1,17 +1,17 @@
-﻿<Project Sdk="FSharp.NET.Sdk;Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>netcoreapp1.0;net462</TargetFrameworks>
+    <TargetFrameworks>netcoreapp2.0;net462</TargetFrameworks>
     <AssemblyName>Foobar</AssemblyName>
-    <Platform>x86</Platform>
+    <!-- <Platform>x86</Platform> -->
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FSharp.NET.Sdk" Version="1.0.*" PrivateAssets="All" />
-    <PackageReference Include="FSharp.Core" Version="4.1.*" />
-    <PackageReference Include="Suave" Version="2.*"/>
+    <PackageReference Include="FSharp.Core" Version="4.2.3" />
+    <PackageReference Include="Suave" Version="2.2.1"/>
+    <PackageReference Include="EventStore.ClientAPI.NetCore" Version="4.0.3-rc"/>
     <DotNetCliToolReference Include="Microsoft.DotNet.Watcher.Tools" Version="1.0.0"/>
-    <DotNetCliToolReference Include="dotnet-mono" Version="0.3.2-alpha001"/>
+    <DotNetCliToolReference Include="dotnet-mono" Version="0.3.3-alpha001"/>
     <DotNetCliToolReference Include="dotnet-proj-info" Version="0.9.0"/>
   </ItemGroup>
 

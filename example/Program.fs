@@ -8,6 +8,10 @@ open Suave.Successful
 
 [<EntryPoint>]
 let main argv =
+    let client = new System.Net.Http.HttpClient()
+    let result = client.GetAsync("https://api.ipify.org/?format=json").Result
+    result.Content.ReadAsStringAsync().Result |> printfn "result: %A " 
+
     if Type.GetType("Mono.Runtime") <> null then
         printfn "Hello World from F# on mono"
     elif Type.GetType("System.Runtime.Loader.AssemblyLoadContext, System.Runtime.Loader") <> null then

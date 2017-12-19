@@ -8,6 +8,81 @@ open Shell
 open Logary.Facade
 open Logary.Facade.Message
 open ProcessLogging
+open System.Xml.Linq
+open Argu
+open System.Globalization
+open System.Collections.Generic
+
+
+module SystemNetHttpFixer =
+
+    let appendCorrectBindingRedirect version (xd : XDocument) =
+        xd.Descendants()
+        |> Seq.tryFind(fun x ->
+            x.Name.LocalName = "runtime"
+            )
+        |> Option.iter(fun runtimeElement ->
+            let redirect = 
+                XElement.Parse 
+                <| sprintf
+                            """<assemblyBinding xmlns="urn:schemas-microsoft-com:asm.v1">
+      <dependentAssembly>
+        <assemblyIdentity name="System.Net.Http" publicKeyToken="b03f5f7f11d50a3a" culture="neutral" />
+        <bindingRedirect oldVersion="0.0.0.0-999.999.999.999" newVersion="%s" />
+      </dependentAssembly>
+    </assemblyBinding>""" version
+            runtimeElement.Add(redirect)
+
+            Message.eventX "Setting assemblyBinding for {dll} to {version}" LogLevel.Debug
+            |> Message.setField "dll" "System.Net.Http"
+            |> Message.setField "version" version
+            |> logger.logSync
+        )
+
+    // Broken on .netcore ??
+    // let systemNetHttpGACVersion () =
+    //     try
+    //         let monoGAC = Environment.GetEnvironmentVariable "FrameworkPathOverride" |> DirectoryInfo
+    //         let systemNetHttp =
+    //             monoGAC.GetFiles ("*.dll")
+    //             |> Seq.find(fun fi -> fi.Name = "System.Net.Http.dll")
+    //         let asm = System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromAssemblyPath systemNetHttp.FullName
+    //         let ver = asm.GetName().Version.ToString()
+    //         // printfn "ver: %A" ver
+    //         ver
+    //     with e ->
+    //         eprintfn "%A" e
+    //         "4.0.0.0"
+
+    let reconfigureAssemblyRedirect (xd : XDocument) =
+        let ele =
+            xd.Descendants()
+            |> Seq.tryFind(fun x ->
+                x.Name.LocalName = "assemblyIdentity" && x.Attributes() |> Seq.exists (fun attr -> attr.Value="System.Net.Http")
+                )
+
+        match ele with
+        | Some assemblyIdentity ->
+            let nodeToDelete = assemblyIdentity.Parent.Parent
+            Message.eventX "Deleting node {node}" LogLevel.Debug
+            |> Message.setField "node" (nodeToDelete.ToString())
+            |> logger.logSync
+            nodeToDelete.Remove()
+        | None -> ()
+
+        appendCorrectBindingRedirect ("4.0.0.0") xd
+        
+    let deleteBadSystemNetHttp (exePath : FileInfo) =
+        exePath.Directory.GetFiles("*.dll")
+        |> Seq.tryFind(fun fi -> fi.Name = "System.Net.Http.dll")
+        |> Option.iter(fun fi -> 
+            Message.eventX "Deleting {file}" LogLevel.Debug
+            |> Message.setField "file" fi.FullName
+            |> logger.logSync
+            fi.Delete())
+ 
+
+
 module Main =
         
     type CLIArguments =
@@ -23,6 +98,7 @@ module Main =
         | [<EqualsAssignment>][<AltCommandLine("-po")>] ProgramOptions of programOptions:string 
         | LoggerLevel of logLevel:string
         | No_Build
+        | Purge_System_Net_Http
         with
             interface IArgParserTemplate with
                 member s.Usage =
@@ -39,6 +115,7 @@ module Main =
                     | ProgramOptions _ -> "(Optional) Flags to be passed to running exe."
                     | LoggerLevel _ -> "(Optional) LogLevel for dotnet-mono defaults to Info (Verbose|Debug|Info|Warn|Error|Fatal)"
                     | No_Build -> "(Optional) Will attempt to skip dotnet build."
+                    | Purge_System_Net_Http -> "(Optional) Mono has issues with HttpClient noted here: https://github.com/dotnet/corefx/issues/19914 ...This will attempt to resolve them."
 
     let getProjectFile directory =
         let projectFiles = Directory.GetFiles(directory, "*.*proj");
@@ -68,6 +145,7 @@ module Main =
             |> logger.logSync
             Shell.killAllCreatedProcesses()
         )
+
 
 
     [<EntryPoint>]
@@ -159,6 +237,15 @@ module Main =
 
         let proj = Microsoft.Build.Evaluation.Project(project,globalProperties,null)
 
+
+        proj.Properties
+        |> Seq.iter(fun p -> 
+                Message.eventX "Project properties {key}={value}"  LogLevel.Verbose
+                |> Message.setField "key"  p.Name
+                |> Message.setField "value" p.EvaluatedValue
+                |> logger.logSync
+        )
+
         let runExeLocation =  proj.GetPropertyValue("RunCommand")
 
         Message.eventX "Run Location : {RunCommand}" LogLevel.Debug
@@ -181,6 +268,25 @@ module Main =
                 sprintf "--framework %s" framework
                 project
             ] envVars
+
+
+        if results.Contains <@Purge_System_Net_Http@> then
+            runExeLocation
+            |> FileInfo
+            |> SystemNetHttpFixer.deleteBadSystemNetHttp 
+
+            let fixConfig () =
+                let configLocation =
+                    runExeLocation
+                    |> sprintf "%s.config"
+
+                let xd = XDocument.Load(configLocation)
+                
+                SystemNetHttpFixer.reconfigureAssemblyRedirect xd
+                configLocation
+                |> File.Create 
+                |> xd.Save
+            fixConfig ()
 
         mono (IO.Path.GetDirectoryName runExeLocation) monoOptions runExeLocation programOptions envVars
 
