@@ -34,8 +34,8 @@
   <ItemGroup>
     <PackageReference Include="FSharp.Core" Version="4.1.17" />
     <PackageReference Include="Argu" Version="3.7.*" />
-    <PackageReference Include="Microsoft.Build" Version="15.4.8" />
-    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="15.4.8"/>    
+    <PackageReference Include="Microsoft.Build" Version="15.5.180" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="15.5.180"/>    
     <DotNetCliToolReference Include="Microsoft.DotNet.Watcher.Tools" Version="1.0.0"/>
   </ItemGroup>
 
