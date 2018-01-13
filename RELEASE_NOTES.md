@@ -1,3 +1,6 @@
+### 0.3.4-alpha001 - 01.12.2018
+* Fix msbuild errors (https://github.com/TheAngryByrd/dotnet-mono/pull/28)
+
 ### 0.3.3 - 01.12.2018
 * Add Purge System.Net.Http.dll (https://github.com/TheAngryByrd/dotnet-mono/pull/26)
 
