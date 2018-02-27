@@ -2,16 +2,16 @@
 
 [![NuGet Badge](https://img.shields.io/nuget/vpre/dotnet-mono.svg)](https://www.nuget.org/packages/dotnet-mono/)
 
-## What?
-Able to run executables created by dotnet core from full framework on osx/linux
+## What is dotnet-mono?
+This a [dotnet tool](https://docs.microsoft.com/en-us/dotnet/core/tools/?tabs=netcore2x) that allows you to run executables created by the new dotnet core sdk project format that target full framework (net45-net462) on osx/linux.
 
-## Why?
-In RC4 `dotnet run` [does not run](https://github.com/dotnet/cli/issues/6043) executables [created from mono](https://github.com/dotnet/sdk/issues/335).  This tools sets to resolve that.
+## Why would you create this?
+Since RC4 of the dotnet tooling, `dotnet run` [does not run](https://github.com/dotnet/cli/issues/6043) executables [created from mono](https://github.com/dotnet/sdk/issues/335).  This tools sets to resolve that.
 
 ### Why not just `mono myapp.exe`?
-Because I really like [dotnet watch](https://github.com/aspnet/DotNetTools/tree/dev/src/Microsoft.DotNet.Watcher.Tools) and wanted to run mono apps with it.
+Because I really like [dotnet watch](https://github.com/aspnet/DotNetTools/tree/dev/src/Microsoft.DotNet.Watcher.Tools) which watches for changes in files and reruns the specific dotnet command you give.  Since `dotnet run` doesn't run mono apps, I wanted a way to get continuous feedback when targeting mono as an executable.
 
-## How
+## How to install
 
 Add this element your csproj/fsproj/vbproj.
 
@@ -30,8 +30,8 @@ clitool dotnet-mono
 
 ### Options
   ```
-USAGE: dotnet-mono [--help] [--project <project>] [--framework <framework>] [--runtime <runtime>] [--inferruntime] [--configuration <configuration>] [--restore] [--no-restore] [--frameworkpathoverride=<frameworkPathOverride>] [--monooptions=<monoOptions>]
-                   [--programoptions=<programOptions>] [--loggerlevel <logLevel>] [--no-build]
+USAGE: dotnet-mono [--help] [--project <project>] [--framework <framework>] [--runtime <runtime>] [--inferruntime] [--configuration <configuration>] [--restore] [--no-restore]
+                   [--frameworkpathoverride=<frameworkPathOverride>] [--monooptions=<monoOptions>] [--programoptions=<programOptions>] [--loggerlevel <logLevel>] [--no-build] [--purge-system-net-http]
 
 OPTIONS:
 
@@ -40,7 +40,8 @@ OPTIONS:
     --framework, -f <framework>
                           (Mandatory) Specify a framework.  Most likely net462.  List available here: https://docs.microsoft.com/en-us/nuget/schema/target-frameworks
     --runtime, -r <runtime>
-                          (Optional) Specify a runtime. List available here: https://github.com/dotnet/docs/blob/master/docs/core/rid-catalog.md.  You will probably either need to run dotnet restore properly with runtime or pass --restore.
+                          (Optional) Specify a runtime. List available here: https://github.com/dotnet/docs/blob/master/docs/core/rid-catalog.md.  You will probably either need to run dotnet restore
+                          properly with runtime or pass --restore.
     --inferruntime        (Optional) Try to run explicitly on the current runtime. You will probably either need to run dotnet restore properly with runtime or pass --restore.
     --configuration, -c <configuration>
                           (Optional) Specify a configuration. (Debug|Release|Others) Will default to Debug
@@ -55,13 +56,19 @@ OPTIONS:
     --loggerlevel <logLevel>
                           (Optional) LogLevel for dotnet-mono defaults to Info (Verbose|Debug|Info|Warn|Error|Fatal)
     --no-build            (Optional) Will attempt to skip dotnet build.
+    --purge-system-net-http
+                          (Optional) Mono has issues with HttpClient noted here: https://github.com/dotnet/corefx/issues/19914 ...This will attempt to resolve them.
     --help                display this list of options.
 
 
+```
+
+### Example Usage
+
+Currently dotnet tooling must be used from the same directory you put the reference in your project files.
 
 ```
-### Example Usage
-```
+cd src/MyCoolMonoApp/
 dotnet mono -f net462  -mo="--arch=64 --debug" -po="--help"
 ```
 
@@ -69,6 +76,23 @@ or with the `dotnet watch` tool to constantly rebuild/run your mono app
 ```
 dotnet watch mono -f net462  -mo="--arch=64 --debug" -po="--help"
 ```
+
+
+# FAQ
+
+#### When should I use dotnet-mono?
+When you want to be able to run mono applications (your project must produce an exe) with the dotnet cli tooling and not have to figure out where your executable was output.
+
+
+#### Can I just dotnet build?
+If you set `export FrameworkPathOverride=$(dirname $(which mono))/../lib/mono/4.5/` in your `build.sh`or in your `.bashrc` or `.bash_profile` you can just do `dotnet build` without this tool. See: https://github.com/dotnet/netcorecli-fsc/wiki/.NET-Core-SDK-1.0.1#using-net-framework-as-targets-framework-the-osxunix-build-fails Additionally you can set other project properties see https://github.com/dotnet/sdk/issues/335#issuecomment-368669050.   If 
+
+
+#### How do I run my tests or how about a `dotnet test` equivalent?
+Unfortunately this is in a [very](https://github.com/Microsoft/vstest/issues/1284) [poor](https://github.com/Microsoft/vstest/issues/445#issuecomment-290723152) [state](https://github.com/dotnet/cli/issues/3073) for mono.  If you're using `xunit`, I added mono support to [dotnet-xunit](https://www.nuget.org/packages/dotnet-xunit/2.3.1) and you can use that dotnet tool to run the tests instead.  If you're using `Expecto` since it's just a console app you can run it.  I'm not sure about other test runners.
+
+
+----
 
 
 ### A word on FrameworkPathOverride
