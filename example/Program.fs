@@ -21,6 +21,6 @@ let main argv =
     let app =
         choose [
             OK "Hello World!"
-        ]
+        ] 
     startWebServer defaultConfig app
     0 // return an integer exit code

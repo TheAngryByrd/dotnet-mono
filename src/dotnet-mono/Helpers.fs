@@ -11,6 +11,7 @@ open Argu
 open Logary.Facade
 open Logary.Facade.Message
 open ProcessLogging
+open Chessie.ErrorHandling
 
 module Environment =
     let getEnvironmentVariable =
@@ -169,8 +170,10 @@ module Shell =
                 psi.WorkingDirectory <- workingDir
         ) (TimeSpan.FromSeconds(5.))
 
-    let executeOrFail (program : string) (argsList : string list) workingdir envVars=
+    
+    type ProcessFailure = { exitcode : int }
 
+    let executeOrFail (program : string) (argsList : string list) workingdir envVars=
         let psi = 
             ProcessStartInfo(
                 FileName = program, 
@@ -184,10 +187,13 @@ module Shell =
                 psi.Environment.Add(kvp.Key |> string,kvp.Value |> string)
             with _ -> ()
         )
-        let proc = new Process(StartInfo =psi)
+        use proc = new Process(StartInfo =psi)
         startAndWait proc
         if proc.ExitCode <> 0 then
-            failwithf "%s failed with exit code %d" program proc.ExitCode
+            fail <| { exitcode = proc.ExitCode }
+            // failwithf "%s failed with exit code %d" program proc.ExitCode
+        else
+            ok ()
 
     let dotnet args =
         executeOrFail "dotnet" args null

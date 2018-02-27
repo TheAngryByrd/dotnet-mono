@@ -12,6 +12,7 @@ open System.Xml.Linq
 open Argu
 open System.Globalization
 open System.Collections.Generic
+open Chessie.ErrorHandling
 
 
 module SystemNetHttpFixer =
@@ -117,21 +118,31 @@ module Main =
                     | No_Build -> "(Optional) Will attempt to skip dotnet build."
                     | Purge_System_Net_Http -> "(Optional) Mono has issues with HttpClient noted here: https://github.com/dotnet/corefx/issues/19914 ...This will attempt to resolve them."
 
+    type Errors =
+    | NoFrameworkPathOverrideFound
+    | NoRunnableExecutableFound
+    | TooManyProjectsInDirectory of string array
+    | NoProjectsFoundInDirectory
+    | DotnetRestoreFailure of ProcessFailure
+    | DotnetBuildFailure of ProcessFailure
+    | MonoExecuteFailure of ProcessFailure
+
     let getProjectFile directory =
         let projectFiles = Directory.GetFiles(directory, "*.*proj");
 
         if projectFiles.Length = 0 then    
-            failwith "No valid projects found"
+            fail NoProjectsFoundInDirectory
         
         elif projectFiles.Length > 1 then   
-            failwith "Too many project files"    
-
-        projectFiles |> Seq.head
+            TooManyProjectsInDirectory projectFiles |> fail
+        else
+            projectFiles 
+            |> Seq.head
+            |> ok
 
     let getDefaultProject () =
         let directory = Directory.GetCurrentDirectory()
         getProjectFile directory
-
 
     let setupCloseSignalers () =
         Console.CancelKeyPress.Add(fun _ ->
@@ -147,17 +158,14 @@ module Main =
         )
 
 
-
-    [<EntryPoint>]
-    let main argv =
-
+    let main' argv = trial {
         let errorHandler = ProcessExiter(colorizer = function ErrorCode.HelpText -> None | _ -> Some ConsoleColor.Red)
         let parser = ArgumentParser.Create<CLIArguments>(programName = "dotnet-mono", errorHandler = errorHandler)
         let results = parser.Parse(argv)
        
         match results.TryGetResult<@ LoggerLevel @> with
         | Some ll ->
-            let logaryLevel=
+            let logaryLevel =
                 ll
                 |> LogLevel.ofString
             logger <- Log.create logaryLevel "dotnet-mono"
@@ -174,9 +182,9 @@ module Main =
         |> Message.setField "id" (Process.GetCurrentProcess()).Id
         |> logger.logSync
 
-        let project = 
+        let! project = 
             match results.TryGetResult <@ Project @> with
-            | Some p when p.EndsWith("proj") -> p
+            | Some p when p.EndsWith("proj") -> p |> ok
             | Some p -> getProjectFile p
             | _ -> getDefaultProject ()
 
@@ -185,18 +193,18 @@ module Main =
         |> logger.logSync
 
 
-        let frameworkPathOverride =
+        let! frameworkPathOverride =
             match Environment.getEnvironmentVariable "FrameworkPathOverride" with
-            | Some fpo -> fpo
+            | Some fpo -> ok fpo
             | None -> 
                 match results.TryGetResult <@ FrameworkPathOverride @> with
-                | Some fpo -> fpo
+                | Some fpo -> ok fpo
                 | None -> 
                     match inferFrameworkPathOverride() with
-                    | Some fpo -> fpo
+                    | Some fpo -> ok fpo
                     | None -> 
                         parser.PrintUsage() |> printfn "%s"
-                        failwith "Could not find FrameworkPathOverride in Environemnt, Argument, or Inferring"
+                        fail NoFrameworkPathOverrideFound
 
 
         Message.eventX "FrameworkPathOverride: {FrameworkPathOverride}" LogLevel.Debug
@@ -246,7 +254,11 @@ module Main =
                 |> logger.logSync
         )
 
-        let runExeLocation =  proj.GetPropertyValue("RunCommand")
+        let! runExeLocation =  
+            match proj.GetPropertyValue("RunCommand") with
+            | null | "" ->
+                fail NoRunnableExecutableFound
+            | runCommand -> ok runCommand
 
         Message.eventX "Run Location : {RunCommand}" LogLevel.Debug
         |> Message.setField "RunCommand" runExeLocation
@@ -254,20 +266,22 @@ module Main =
         
        
         if results.Contains <@ Restore @> then
-            dotnetRestore [
-                runtimeArgs
-                project
-            ] envVars
+            do! dotnetRestore [
+                    runtimeArgs
+                    project
+                ] envVars
+                |> Trial.mapFailure (List.map DotnetRestoreFailure)
 
 
         if not <| results.Contains <@ No_Build @> then
-            dotnetBuild [
-                (if results.Contains <@ No_Restore @> then"--no-restore" else String.Empty) 
-                sprintf "--configuration %s" configuration
-                runtimeArgs
-                sprintf "--framework %s" framework
-                project
-            ] envVars
+            do! dotnetBuild [
+                    (if results.Contains <@ No_Restore @> then"--no-restore" else String.Empty) 
+                    sprintf "--configuration %s" configuration
+                    runtimeArgs
+                    sprintf "--framework %s" framework
+                    project
+                ] envVars
+                |> Trial.mapFailure (List.map DotnetBuildFailure)
 
 
         if results.Contains <@Purge_System_Net_Http@> then
@@ -288,6 +302,53 @@ module Main =
                 |> xd.Save
             fixConfig ()
 
-        mono (IO.Path.GetDirectoryName runExeLocation) monoOptions runExeLocation programOptions envVars
+        do! mono (IO.Path.GetDirectoryName runExeLocation) monoOptions runExeLocation programOptions envVars
+            |> Trial.mapFailure (List.map MonoExecuteFailure)
+    }
 
-        0
+
+    [<EntryPoint>]
+    let main argv =
+        let result = main' argv
+        let exitCode =
+            match result with
+            | Ok((),msgs) ->
+                0
+            | Bad errs ->
+                let err = errs |> Seq.head
+                match err with
+                | NoFrameworkPathOverrideFound ->
+                    Message.eventX "Could not find FrameworkPathOverride in Environemnt, Argument, or Inferring" LogLevel.Error
+                    |> logger.logSync
+                    1
+                | NoRunnableExecutableFound ->
+                    Message.eventX "No runnable executable was found. Ensure your project outputs an executable." LogLevel.Error
+                    |> logger.logSync
+                    2
+                | TooManyProjectsInDirectory projs ->
+                    Message.eventX "Too many projects found : {projs}.  Please use --project and pass the project you wish to use" LogLevel.Error
+                    |> Message.setField "projs" projs
+                    |> logger.logSync
+                    3
+                | NoProjectsFoundInDirectory ->
+                    Message.eventX "No project files found." LogLevel.Error
+                    |> logger.logSync
+                    4
+                | DotnetRestoreFailure processFailure -> 
+                    Message.eventX "Dotnet restore failure exitcode : {exitcode} ." LogLevel.Error
+                    |> Message.setField "exitcode" processFailure.exitcode
+                    |> logger.logSync
+                    5
+                | DotnetBuildFailure processFailure -> 
+                    Message.eventX "Dotnet build failure exitcode : {exitcode} ." LogLevel.Error
+                    |> Message.setField "exitcode" processFailure.exitcode
+                    |> logger.logSync
+                    6
+                | MonoExecuteFailure processFailure -> 
+                    Message.eventX "mono failure exitcode : {exitcode} ." LogLevel.Error
+                    |> Message.setField "exitcode" processFailure.exitcode
+                    |> logger.logSync
+                    7
+                
+
+        exitCode
