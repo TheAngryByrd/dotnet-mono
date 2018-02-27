@@ -1,4 +1,4 @@
-### 0.4.0-alpha001 - 02.26.2018
+### 0.4.0 - 02.27.2018
 * Better error handling (https://github.com/TheAngryByrd/dotnet-mono/pull/34)
 
 ### 0.3.4 - 01.12.2018
