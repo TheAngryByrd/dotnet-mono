@@ -1,3 +1,6 @@
+### 0.5.0 - 03.05.2018
+* Match dotnet run with additional argument syntax (https://github.com/TheAngryByrd/dotnet-mono/pull/35)
+
 ### 0.4.0 - 02.27.2018
 * Better error handling (https://github.com/TheAngryByrd/dotnet-mono/pull/34)
 
