@@ -1,3 +1,5 @@
+### 0.5.1 - 2018-03-06
+* BUGFIX: Don't be too aggressive with filtering out -- https://github.com/TheAngryByrd/dotnet-mono/pull/37
 
 ### 0.5.0 - 2018-03-05
 * FEATURE:Match dotnet run with additional argument syntax (https://github.com/TheAngryByrd/dotnet-mono/pull/35)
