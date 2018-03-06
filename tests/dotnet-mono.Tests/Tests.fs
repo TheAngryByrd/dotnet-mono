@@ -169,7 +169,7 @@ let doubleDashTestGenerator =
     
   ]
   |> Seq.mapi (fun index item ->
-      testCase (sprintf "double dash nothing ot split on - %i" index) <| fun () ->
+      testCase (sprintf "double dash - %i" index) <| fun () ->
             let actual1, actual2 = Main.splitArgs item.Argv
             Expect.sequenceEqual actual1 item.ExpectedBeforeDoubleDash ""
             Expect.sequenceEqual actual2 item.ExpectedAfterDoubleDash ""
