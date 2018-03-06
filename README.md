@@ -29,7 +29,11 @@ clitool dotnet-mono
 
 
 ### Options
-  ```
+
+```
+$ dotnet mono --help
+
+Much like dotnet-run you can specify dotnet mono [options] [[--] <additional arguments>...]] to pass arguments to the underlying program.
 USAGE: dotnet-mono [--help] [--project <project>] [--framework <framework>] [--runtime <runtime>] [--inferruntime] [--configuration <configuration>] [--restore] [--no-restore]
                    [--frameworkpathoverride=<frameworkPathOverride>] [--monooptions=<monoOptions>] [--programoptions=<programOptions>] [--loggerlevel <logLevel>] [--no-build] [--purge-system-net-http]
 
@@ -60,7 +64,6 @@ OPTIONS:
                           (Optional) Mono has issues with HttpClient noted here: https://github.com/dotnet/corefx/issues/19914 ...This will attempt to resolve them.
     --help                display this list of options.
 
-
 ```
 
 ### Example Usage
@@ -85,7 +88,7 @@ When you want to be able to run mono applications (your project must produce an 
 
 
 #### Can I just dotnet build?
-If you set `export FrameworkPathOverride=$(dirname $(which mono))/../lib/mono/4.5/` in your `build.sh`or in your `.bashrc` or `.bash_profile` you can just do `dotnet build` without this tool. See: https://github.com/dotnet/netcorecli-fsc/wiki/.NET-Core-SDK-1.0.1#using-net-framework-as-targets-framework-the-osxunix-build-fails Additionally you can set other project properties see https://github.com/dotnet/sdk/issues/335#issuecomment-368669050.   If 
+If you set `export FrameworkPathOverride=$(dirname $(which mono))/../lib/mono/4.5/` in your `build.sh`or in your `.bashrc` or `.bash_profile` you can just do `dotnet build` without this tool. See: https://github.com/dotnet/netcorecli-fsc/wiki/.NET-Core-SDK-1.0.1#using-net-framework-as-targets-framework-the-osxunix-build-fails Additionally you can set other project properties see https://github.com/dotnet/sdk/issues/335#issuecomment-368669050. 
 
 
 #### How do I run my tests or how about a `dotnet test` equivalent?
