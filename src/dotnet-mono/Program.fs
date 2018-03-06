@@ -14,7 +14,6 @@ open System.Globalization
 open System.Collections.Generic
 open Chessie.ErrorHandling
 
-
 module SystemNetHttpFixer =
 
     let appendCorrectBindingRedirect version (xd : XDocument) =
@@ -156,12 +155,28 @@ module Main =
             |> logger.logSync
             Shell.killAllCreatedProcesses()
         )
-
+        
+    let splitArgs args =
+        let argus =
+            args
+            |> Array.takeWhile(fun x -> x <> "--")
+        let additionalArgs =
+            args
+            |> Array.skipWhile(fun x -> x <> "--")
+            |> Array.filter(fun x -> x <> "--")
+        argus,additionalArgs
 
     let main' argv = trial {
+        let argus,additional = splitArgs argv
+
         let errorHandler = ProcessExiter(colorizer = function ErrorCode.HelpText -> None | _ -> Some ConsoleColor.Red)
-        let parser = ArgumentParser.Create<CLIArguments>(programName = "dotnet-mono", errorHandler = errorHandler)
-        let results = parser.Parse(argv)
+        let parser = 
+            ArgumentParser.Create<CLIArguments>(
+                programName = "dotnet-mono", 
+                helpTextMessage =  "Much like dotnet-run you can specify dotnet mono [options] [[--] <additional arguments>...]] to pass arguments to the underlying program.",
+                errorHandler = errorHandler)
+                
+        let results = parser.Parse(argus)
        
         match results.TryGetResult<@ LoggerLevel @> with
         | Some ll ->
@@ -232,7 +247,12 @@ module Main =
         let configuration = results.GetResult (<@ Configuration @>, defaultValue="Debug")
         let monoOptions = results.GetResult (<@ MonoOptions @>, defaultValue="")
 
-        let programOptions = results.GetResult (<@ ProgramOptions @>, defaultValue="")
+        let programOptionDefault = 
+            match String.Join(" ", additional) with
+            | x when String.IsNullOrEmpty(x) -> String.Empty
+            | x -> x
+            
+        let programOptions = results.GetResult (<@ ProgramOptions @>, defaultValue=programOptionDefault)
 
         // https://github.com/dotnet/cli/blob/master/src/dotnet/commands/dotnet-run/RunCommand.cs
         let globalProperties = 
