@@ -1,8 +1,10 @@
 
 module dotnet.mono.Tests
 
+open System
 open Expecto 
 open System.Xml.Linq
+open DotnetMono
 
 module Expect =
     let stringNotContains (subject : string) (substring : string) message =
@@ -138,6 +140,7 @@ let appendAssemblyRedirect =
 
 let deleteDllTest = 
     testCase "Delete System.Net.Http.dll" <| fun () -> ()
+    
 
 [<Tests>]
 let SystemNetHttpPurgeTests =
@@ -145,4 +148,36 @@ let SystemNetHttpPurgeTests =
         deleteDllTest
         appendAssemblyRedirect
         deleteAssemblyRedirect
+    ]
+
+type DoubleDashParmaters =
+  {
+    Argv : string array
+    ExpectedBeforeDoubleDash : string array
+    ExpectedAfterDoubleDash : string array
+  }
+    with
+      static member Create (args : string) before after = 
+        {Argv = args.Split(" ");  ExpectedBeforeDoubleDash = before; ExpectedAfterDoubleDash =after}
+      
+let doubleDashTestGenerator =
+  [
+    DoubleDashParmaters.Create "--help" [|"--help"|] [||]
+    DoubleDashParmaters.Create "--help -- --logger-level Warn" [|"--help"|] [|"--logger-level"; "Warn"|]
+    DoubleDashParmaters.Create "-- --real-parameter -- --help" [||] [|"--real-parameter"; "--" ; "--help"|]
+    DoubleDashParmaters.Create "--framework net462 -- --real-parameter -- --help" [|"--framework"; "net462"|] [|"--real-parameter"; "--" ; "--help"|]
+    
+  ]
+  |> Seq.mapi (fun index item ->
+      testCase (sprintf "double dash nothing ot split on - %i" index) <| fun () ->
+            let actual1, actual2 = Main.splitArgs item.Argv
+            Expect.sequenceEqual actual1 item.ExpectedBeforeDoubleDash ""
+            Expect.sequenceEqual actual2 item.ExpectedAfterDoubleDash ""
+  )
+
+
+[<Tests>]
+let ArgumentParsingTests =
+    testList "Argument Parsing Tests" [
+      yield! doubleDashTestGenerator
     ]

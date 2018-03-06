@@ -163,7 +163,7 @@ module Main =
         let additionalArgs =
             args
             |> Array.skipWhile(fun x -> x <> "--")
-            |> Array.filter(fun x -> x <> "--")
+            |> (fun a -> if Array.tryHead a = Some "--" then Array.tail a else a)
         argus,additionalArgs
 
     let main' argv = trial {
