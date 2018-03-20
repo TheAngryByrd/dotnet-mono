@@ -62,11 +62,10 @@ Target "DotnetBuild" (fun _ ->
 Target "DotnetTest" (fun _ ->
     !! testsGlob
     |> Seq.iter (fun proj ->
-        DotNetCli.Test (fun c ->
+        DotNetCli.RunCommand  (fun c ->
             { c with
-                Project = proj
                 WorkingDir = IO.Path.GetDirectoryName proj
-            }) 
+            }) "run"
 ))
 
 Target "DotnetPack" (fun _ ->
@@ -112,7 +111,7 @@ Target "Release" (fun _ ->
 "Clean"
   ==> "DotnetRestore"
   ==> "DotnetBuild"
-//   ==> "DotnetTest"
+  ==> "DotnetTest"
   ==> "DotnetPack"
   ==> "Publish"
   ==> "Release"
