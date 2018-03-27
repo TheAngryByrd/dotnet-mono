@@ -1,4 +1,4 @@
-### 0.5.2-alpha001 - 2018-03-06
+### 0.5.2 - 2018-03-06
 * BUGFIX: Bump Microsoft.Build nuget to work with dotnet 2.1.101 sdk https://github.com/TheAngryByrd/dotnet-mono/pull/39
 
 ### 0.5.1 - 2018-03-06
