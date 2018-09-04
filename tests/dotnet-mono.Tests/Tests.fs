@@ -5,6 +5,8 @@ open System
 open Expecto 
 open System.Xml.Linq
 open DotnetMono
+open DotnetMono.Main
+open DotnetMono
 
 module Expect =
     let stringNotContains (subject : string) (substring : string) message =
@@ -176,8 +178,31 @@ let doubleDashTestGenerator =
   )
 
 
+
 [<Tests>]
 let ArgumentParsingTests =
     testList "Argument Parsing Tests" [
       yield! doubleDashTestGenerator
     ]
+
+
+// Set MSBUILD_EXE_PATH
+// Too painful to set programatically
+// [<Tests>]
+let MsBuildTests = 
+  testList "MSBuild tests" [
+    testCase "RunCommand with Runtime" <| fun () ->
+      let projPath = "testProj1/testProj1.fsproj"
+      let props = globalProperties "Debug" "net461" (Some "osx-x64")
+      let result = Microsoft.Build.Evaluation.Project(projPath, props, null)
+      let runCmd = result.GetPropertyValue("RunCommand") |> string
+
+      Expect.stringEnds runCmd "/testProj1/bin/Debug/net461/osx-x64/Foobar.exe" "Should have configuration, targetframework, and runtime in run path"
+    testCase "RunCommand without Runtime" <| fun () ->
+      let projPath = "testProj1/testProj1.fsproj"
+      let props = globalProperties "Debug" "net461" None
+      let result = Microsoft.Build.Evaluation.Project(projPath, props, null)
+      let runCmd = result.GetPropertyValue("RunCommand") |> string
+
+      Expect.stringEnds runCmd "/testProj1/bin/Debug/net461/Foobar.exe" "Should have configuration, and targetframework in run path"
+  ]

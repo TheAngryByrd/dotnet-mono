@@ -34,14 +34,10 @@
   <ItemGroup>
     <PackageReference Include="FSharp.Core" Version="4.1.17" />
     <PackageReference Include="Argu" Version="3.7.*" />
-    <PackageReference Include="Microsoft.Build" Version="15.7.179" />
-    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="15.7.179"/>    
+    <PackageReference Include="Microsoft.Build" Version="15.8.166" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="15.8.166"/>    
     <PackageReference Include="Chessie" Version="0.6.0"/>    
-    <DotNetCliToolReference Include="Microsoft.DotNet.Watcher.Tools" Version="1.0.0"/>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)'=='netcoreapp1.0'">
-    <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
-  </ItemGroup>
 </Project>
 

@@ -166,6 +166,15 @@ module Main =
             |> (fun a -> if Array.tryHead a = Some "--" then Array.tail a else a)
         argus,additionalArgs
 
+    // https://github.com/dotnet/cli/blob/master/src/dotnet/commands/dotnet-run/RunCommand.cs
+    let globalProperties configuration framework runtime = 
+        let props = Dictionary<string,string>()
+        props.Add("Configuration",configuration)
+        props.Add("TargetFramework",framework)
+        props.Add("MSBuildExtensionsPath",IO.Path.GetDirectoryName(Environment.GetEnvironmentVariable("MSBUILD_EXE_PATH")))
+        props |> Dictionary.addIfSome "RuntimeIdentifier" runtime
+        props
+
     let main' argv = trial {
         let argus,additional = splitArgs argv
 
@@ -254,14 +263,7 @@ module Main =
             
         let programOptions = results.GetResult (<@ ProgramOptions @>, defaultValue=programOptionDefault)
 
-        // https://github.com/dotnet/cli/blob/master/src/dotnet/commands/dotnet-run/RunCommand.cs
-        let globalProperties = 
-            [
-                "Configuration", configuration
-                "TargetFramework",framework
-                "MSBuildExtensionsPath", IO.Path.GetDirectoryName(Environment.GetEnvironmentVariable("MSBUILD_EXE_PATH"))       
-            ]
-            |> dict
+        let globalProperties = globalProperties configuration framework runtime
 
         let proj = Microsoft.Build.Evaluation.Project(project,globalProperties,null)
 

@@ -8,7 +8,6 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
-   <DotNetCliToolReference Include="Microsoft.DotNet.Watcher.Tools" Version="2.0.0" />
    
     <PackageReference Include="Expecto" Version="5.1.1" />
   </ItemGroup>

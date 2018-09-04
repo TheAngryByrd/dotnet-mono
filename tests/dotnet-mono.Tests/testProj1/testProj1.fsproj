@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>netcoreapp2.0;net462</TargetFrameworks>
+    <RuntimeIdentifiers>osx-x64</RuntimeIdentifiers>
+    <AssemblyName>Foobar</AssemblyName>
+    <!-- <Platform>x86</Platform> -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FSharp.Core" Version="4.2.3" />
+    <PackageReference Include="Suave" Version="2.2.1"/>
+    <PackageReference Include="EventStore.ClientAPI.NetCore" Version="4.0.3-rc"/>
+    <DotNetCliToolReference Include="Microsoft.DotNet.Watcher.Tools" Version="1.0.0"/>
+    <DotNetCliToolReference Include="dotnet-mono" Version="0.4.0-alpha001"/>
+    <DotNetCliToolReference Include="dotnet-proj-info" Version="0.9.0"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+
+</Project>
