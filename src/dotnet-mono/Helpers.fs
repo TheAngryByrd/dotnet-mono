@@ -1,3 +1,4 @@
+
 namespace DotnetMono
 open System
 open System.Linq
@@ -12,6 +13,7 @@ open Logary.Facade
 open Logary.Facade.Message
 open ProcessLogging
 open Chessie.ErrorHandling
+
 
 module Environment =
     let getEnvironmentVariable =
@@ -233,3 +235,12 @@ module Shell =
         |> Seq.filter(fun s -> s.Contains("RID"))
         |> Seq.head
         |> fun s -> s.Replace("RID:","").Trim()
+
+
+module Dictionary =
+    let addIfSome key valueOpt (dictionary : IDictionary<_,_>) =
+        match valueOpt with
+        | Some x ->
+            dictionary.Add(key,x)
+        | None ->
+            ()
