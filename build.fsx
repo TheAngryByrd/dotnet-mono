@@ -61,6 +61,7 @@ Target "DotnetBuild" (fun _ ->
 
 Target "DotnetTest" (fun _ ->
     !! testsGlob
+    |> Seq.filter(fun proj -> proj.Contains("testProj1") |> not)
     |> Seq.iter (fun proj ->
         DotNetCli.RunCommand  (fun c ->
             { c with

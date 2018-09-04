@@ -1,4 +1,8 @@
 
+
+### 0.5.4-beta001 - 2018-09-04
+* BUGFIX: Fixed the RunCommand location when a runtime is specified https://github.com/TheAngryByrd/dotnet-mono/pull/42
+
 ### 0.5.3 - 2018-03-06
 * BUGFIX: Bump Microsoft.Build nuget to work with dotnet 2.1.300 sdk https://github.com/TheAngryByrd/dotnet-mono/pull/49
 * MINOR: Add netcoreapp2.1 as a possible runtime https://github.com/TheAngryByrd/dotnet-mono/pull/49
