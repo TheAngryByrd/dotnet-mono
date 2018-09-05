@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -8,10 +9,7 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
-   
-    <PackageReference Include="Expecto" Version="5.1.1" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\..\src\dotnet-mono\dotnet-mono.fsproj" />
   </ItemGroup>
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

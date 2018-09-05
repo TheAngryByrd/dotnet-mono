@@ -1,5 +1,19 @@
 source https://www.nuget.org/api/v2
+framework: netcoreapp2.1, netcoreapp2.0
+content: none
+storage: none
+nuget Argu >= 3.7.0
+nuget Chessie 0.6.0
+clitool dotnet-mono 0.4.0-alpha001 alpha
+clitool dotnet-proj-info 0.9.0
+nuget EventStore.ClientAPI.NetCore 4.0.3-rc rc
+nuget Expecto 5.1.1
+nuget FSharp.Core 4.2.3
+nuget Microsoft.Build 15.8.166
+nuget Microsoft.Build.Utilities.Core 15.8.166
+nuget Suave 2.2.1
+
 
 group Build
     source https://www.nuget.org/api/v2
-    nuget FAKE
+    nuget FAKE ~> 4

@@ -1,0 +1,5 @@
+FSharp.Core
+Suave
+EventStore.ClientAPI.NetCore
+dotnet-mono
+dotnet-proj-info
