@@ -1,6 +1,6 @@
 
 
-### 0.5.4-beta001 - 2018-09-04
+### 0.5.4-beta002 - 2018-09-05
 * BUGFIX: Fixed the RunCommand location when a runtime is specified https://github.com/TheAngryByrd/dotnet-mono/pull/42
 
 ### 0.5.3 - 2018-03-06
