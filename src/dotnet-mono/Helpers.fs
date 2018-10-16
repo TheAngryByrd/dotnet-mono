@@ -91,10 +91,10 @@ module Shell =
             with exn -> ()
         startedProcesses.Clear()
     let start (proc : Process) = 
-        try
-            System.Console.OutputEncoding <- System.Text.Encoding.UTF8
-        with exn ->
-            printfn "Failed setting UTF8 console encoding, ignoring error... %s." exn.Message
+        // try
+        //     System.Console.OutputEncoding <- System.Text.Encoding.UTF8
+        // with exn ->
+        //     printfn "Failed setting UTF8 console encoding, ignoring error... %s." exn.Message
 
         if proc.StartInfo.FileName.ToLowerInvariant().EndsWith(".exe") then
             proc.StartInfo.Arguments <- "--debug \"" + proc.StartInfo.FileName + "\" " + proc.StartInfo.Arguments
@@ -126,8 +126,8 @@ module Shell =
                 failwithf "Start of process %s failed. WorkingDir %s does not exist." proc.StartInfo.FileName 
                     proc.StartInfo.WorkingDirectory
         if silent then 
-            proc.StartInfo.StandardOutputEncoding <- Encoding.UTF8
-            proc.StartInfo.StandardErrorEncoding  <- Encoding.UTF8
+            // proc.StartInfo.StandardOutputEncoding <- Encoding.UTF8
+            // proc.StartInfo.StandardErrorEncoding  <- Encoding.UTF8
             proc.ErrorDataReceived.Add(fun d -> 
                 if d.Data <> null then errorF d.Data)
             proc.OutputDataReceived.Add(fun d -> 
