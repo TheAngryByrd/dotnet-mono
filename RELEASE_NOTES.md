@@ -1,5 +1,5 @@
 
-### 0.5.5-alpha003 - 2019-04-16
+### 0.5.5 - 2019-04-16
 * BUGFIX: Dealing with encoding issues
 * MINOR: MsBuild packages to 16.0.461
 
