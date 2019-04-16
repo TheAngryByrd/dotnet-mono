@@ -1,7 +1,7 @@
 source https://www.nuget.org/api/v2
 content: none
 storage: none
-nuget Argu >= 4.0.0
+nuget Argu >= 3.7.0
 nuget Chessie 0.6.0
 clitool dotnet-mono 0.4.0-alpha001 alpha
 clitool dotnet-proj-info 0.9.0

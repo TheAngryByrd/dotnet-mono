@@ -266,7 +266,6 @@ module Main =
         let programOptions = results.GetResult (<@ ProgramOptions @>, defaultValue=programOptionDefault)
 
         let globalProperties = globalProperties configuration framework runtime
-        globalProperties|> Seq.iter(printfn "globalProperties: %A")
 
         globalProperties
         |> Seq.iter(fun p -> 
