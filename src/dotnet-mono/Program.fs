@@ -13,6 +13,7 @@ open Argu
 open System.Globalization
 open System.Collections.Generic
 open Chessie.ErrorHandling
+open Microsoft.Build.Execution
 
 module SystemNetHttpFixer =
 
@@ -168,7 +169,8 @@ module Main =
 
     // https://github.com/dotnet/cli/blob/master/src/dotnet/commands/dotnet-run/RunCommand.cs
     let globalProperties configuration framework runtime = 
-        let props = Dictionary<string,string>()
+        let props = Dictionary<string,string>(StringComparer.OrdinalIgnoreCase)
+        props.Add("EnableDefaultItems","false")
         props.Add("Configuration",configuration)
         props.Add("TargetFramework",framework)
         props.Add("MSBuildExtensionsPath",IO.Path.GetDirectoryName(Environment.GetEnvironmentVariable("MSBUILD_EXE_PATH")))
@@ -264,8 +266,17 @@ module Main =
         let programOptions = results.GetResult (<@ ProgramOptions @>, defaultValue=programOptionDefault)
 
         let globalProperties = globalProperties configuration framework runtime
+        globalProperties|> Seq.iter(printfn "globalProperties: %A")
 
-        let proj = Microsoft.Build.Evaluation.Project(project,globalProperties,null)
+        globalProperties
+        |> Seq.iter(fun p -> 
+                Message.eventX "globalProperties {key}={value}"  LogLevel.Verbose
+                |> Message.setField "key"  p.Key
+                |> Message.setField "value" p.Value
+                |> logger.logSync
+        )
+
+        let proj = ProjectInstance(project, globalProperties, null)
 
 
         proj.Properties
