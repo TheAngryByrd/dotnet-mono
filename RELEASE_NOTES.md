@@ -1,6 +1,7 @@
 
-### 0.5.5-alpha001 - 2018-10-16
+### 0.5.5-alpha002 - 2018-10-16
 * BUGFIX: Dealing with encoding issues
+* MINOR: MsBuild packages to 16.0.461
 
 ### 0.5.4 - 2018-10-16
 * BUGFIX: Fixed the RunCommand location when a runtime is specified https://github.com/TheAngryByrd/dotnet-mono/pull/42
