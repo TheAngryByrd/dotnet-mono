@@ -204,9 +204,12 @@ module Main =
 
         setupCloseSignalers ()
 
-        Message.eventX "dotnet-mono current process id: {id}" LogLevel.Info
-        |> Message.setField "id" (Process.GetCurrentProcess()).Id
-        |> logger.logSync
+        try
+            Message.eventX "dotnet-mono current process id: {id}" LogLevel.Info
+            |> Message.setField "id" (Process.GetCurrentProcess()).Id
+            |> logger.logSync
+        with
+        | _ -> ()
 
         let! project = 
             match results.TryGetResult <@ Project @> with
