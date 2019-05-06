@@ -1,3 +1,5 @@
+### 0.5.6 - 2019-05-06
+* BUGFIX: Dealing with processor info issues on linux (https://github.com/TheAngryByrd/dotnet-mono/pull/44)
 
 ### 0.5.5 - 2019-04-16
 * BUGFIX: Dealing with encoding issues
