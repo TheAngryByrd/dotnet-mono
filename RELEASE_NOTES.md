@@ -1,3 +1,8 @@
+
+### 0.5.7-beta001  - 2019-10-02
+* BUGFIX: Logary loading threading issues
+
+
 ### 0.5.6 - 2019-05-06
 * BUGFIX: Dealing with processor info issues on linux (https://github.com/TheAngryByrd/dotnet-mono/pull/44)
 

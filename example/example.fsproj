@@ -13,7 +13,8 @@
     <PackageReference Include="EventStore.ClientAPI.NetCore" Version="4.0.3-rc" />
     <PackageReference Include="FSharp.Core" Version="4.2.3" />
     <PackageReference Include="Suave" Version="2.2.1" />
-    <DotNetCliToolReference Include="dotnet-mono" Version="0.5.5-alpha002" />
+    <DotNetCliToolReference Include="dotnet-mono" Version="0.5.7-beta001" />
   </ItemGroup>
-  <Import Project="..\.paket\Paket.Restore.targets" />
+  <!-- <Import Project="..\.paket\Paket.Restore.targets" /> -->
+  <!-- <Import Project="..\.paket\Paket.Restore.targets" /> -->
 </Project>

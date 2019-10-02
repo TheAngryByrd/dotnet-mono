@@ -9,9 +9,8 @@ open System.Diagnostics
 open System.IO
 open System.Text
 open Argu
-open Logary.Facade
-open Logary.Facade.Message
-open ProcessLogging
+open DotnetMono.Logging
+open DotnetMono.Logging.Types
 open Chessie.ErrorHandling
 
 
@@ -22,7 +21,8 @@ module Environment =
 //Thanks FAKE
 module Shell =
 
-
+    let logger = LogProvider.getLoggerByName("DotnetMono.Shell")
+    
     type internal ConcurrentBag<'T> with
         member internal this.Clear() = 
             while not(this.IsEmpty) do
@@ -43,23 +43,25 @@ module Shell =
               Errors = errors }
 
     let kill (proc : Process) = 
-        Message.eventX "Trying to kill: {ProcessName} - {ProcessId}" LogLevel.Info
-        |> setField "ProcessName" proc.ProcessName
-        |> setField "ProcessId" proc.Id
-        |> logger.logSync
-
+        logger.info(
+            Log.setMessage "Trying to kill: {ProcessName} - {ProcessId}"
+            >> Log.addParameter proc.ProcessName
+            >> Log.addParameter proc.Id
+        )
         try 
             proc.Kill()
-            Message.eventX "Killed: {ProcessName} - {ProcessId}" LogLevel.Info
-            |> setField "ProcessName" proc.ProcessName
-            |> setField "ProcessId" proc.Id
-            |> logger.logSync
+            logger.info(
+                Log.setMessage "Killed: {ProcessName} - {ProcessId}"
+                >> Log.addParameter proc.ProcessName
+                >> Log.addParameter proc.Id
+            )
         with exn -> 
-            Message.event LogLevel.Error "Could not kill process {processName} (Id = {id})" 
-            |> setField "id"  proc.Id
-            |> setField "processName" proc.ProcessName 
-            |> addExn exn
-            |> logger.logSync
+            logger.error(
+                Log.setMessage "Could not kill process {processName} (Id = {id})" 
+                >> Log.addParameter proc.ProcessName
+                >> Log.addParameter proc.Id
+                >> Log.addExn exn
+            )
 
 
     let dateWithinTolerance (date1 : DateTime) date2 (tolerance : TimeSpan) =
@@ -67,8 +69,9 @@ module Shell =
         diff <= tolerance
     let killAllCreatedProcesses() =
     
-        Message.eventX "Killing all processes that are created by dotnet-mono and are still running." LogLevel.Info
-        |> logger.logSync
+        logger.info(
+            Log.setMessage "Killing all processes that are created by dotnet-mono and are still running."
+        )
 
         let traced = ref false
         for pid, startTime in startedProcesses do
@@ -83,11 +86,12 @@ module Shell =
                             traced := true
                             kill proc
                     with exn -> 
-                        Message.eventX "Killing {ProcessName} - {ProcessId} failed" LogLevel.Error
-                            |> setField "ProcessName" proc.ProcessName
-                            |> setField "ProcessId" proc.Id
-                            |> addExn exn
-                            |> logger.logSync                        
+                        logger.error(
+                            Log.setMessage "Killing {ProcessName} - {ProcessId} failed"
+                            >> Log.addParameter proc.ProcessName
+                            >> Log.addParameter proc.Id
+                            >> Log.addExn exn
+                        )                   
             with exn -> ()
         startedProcesses.Clear()
     let start (proc : Process) = 
@@ -101,20 +105,23 @@ module Shell =
             proc.StartInfo.FileName <- "mono"
         proc.Start() |> ignore
         startedProcesses.Add(proc.Id, proc.StartTime) |> ignore
-        Message.eventX "Started: {ProcessName} {Arguments} - {ProcessId}" LogLevel.Info
-        |> setField "ProcessName" proc.StartInfo.FileName
-        |> setField "Arguments" proc.StartInfo.Arguments
-        |> setField "ProcessId" proc.Id
-        |> logger.logSync
+        logger.info(
+            Log.setMessage "Started: {ProcessName} {Arguments} - {ProcessId}"
+            >> Log.addParameter proc.StartInfo.FileName
+            >> Log.addParameter proc.StartInfo.Arguments
+            >> Log.addParameter proc.Id
+        )
+
 
     let startAndWait (proc : Process) =
         start proc
         proc.WaitForExit()
 
-        Message.eventX "Ended: {App} - {ProcessId}" LogLevel.Info
-        |> setField "App" proc.StartInfo.FileName
-        |> setField "ProcessId" proc.Id
-        |> logger.logSync
+        logger.info(
+            Log.setMessage "Ended: {App} - {ProcessId}"
+            >> Log.addParameter proc.StartInfo.FileName
+            >> Log.addParameter proc.Id
+        )
 
 
     let ExecProcessWithLambdas configProcessStartInfoF (timeOut : TimeSpan) silent errorF messageF = 

@@ -12,6 +12,9 @@ nuget Microsoft.Build 16.0.461
 nuget Microsoft.Build.Utilities.Core 16.0.461
 nuget Suave 2.2.1
 
+nuget Serilog.Sinks.ColoredConsole 3.0.1
+
+github TheAngryByrd/FsLibLog src/FsLibLog/FsLibLog.fs
 
 group Build
     source https://www.nuget.org/api/v2
