@@ -5,17 +5,19 @@ open System.Diagnostics
 open System.IO
 open Argu
 open Shell
-open Logary.Facade
-open Logary.Facade.Message
-open ProcessLogging
+open DotnetMono.Logging
+open DotnetMono.Logging.Types
 open System.Xml.Linq
 open Argu
 open System.Globalization
 open System.Collections.Generic
 open Chessie.ErrorHandling
 open Microsoft.Build.Execution
+open Serilog
 
 module SystemNetHttpFixer =
+
+    let logger = LogProvider.getLoggerByName("DotnetMono.SystemNetHttpFixer")
 
     let appendCorrectBindingRedirect version (xd : XDocument) =
         xd.Descendants()
@@ -34,10 +36,11 @@ module SystemNetHttpFixer =
     </assemblyBinding>""" version
             runtimeElement.Add(redirect)
 
-            Message.eventX "Setting assemblyBinding for {dll} to {version}" LogLevel.Debug
-            |> Message.setField "dll" "System.Net.Http"
-            |> Message.setField "version" version
-            |> logger.logSync
+            logger.debug(
+                Log.setMessage "Setting assemblyBinding for {dll} to {version}"
+                >> Log.addParameter "System.Net.Http"
+                >> Log.addParameter version
+            )
         )
 
     // Broken on .netcore ??
@@ -65,9 +68,11 @@ module SystemNetHttpFixer =
         match ele with
         | Some assemblyIdentity ->
             let nodeToDelete = assemblyIdentity.Parent.Parent
-            Message.eventX "Deleting node {node}" LogLevel.Debug
-            |> Message.setField "node" (nodeToDelete.ToString())
-            |> logger.logSync
+            logger.debug(
+                Log.setMessage "Deleting node {node}"
+                >> Log.addParameter (nodeToDelete.ToString())
+            )
+
             nodeToDelete.Remove()
         | None -> ()
 
@@ -77,14 +82,27 @@ module SystemNetHttpFixer =
         exePath.Directory.GetFiles("*.dll")
         |> Seq.tryFind(fun fi -> fi.Name = "System.Net.Http.dll")
         |> Option.iter(fun fi -> 
-            Message.eventX "Deleting {file}" LogLevel.Debug
-            |> Message.setField "file" fi.FullName
-            |> logger.logSync
+            logger.debug(
+                Log.setMessage "Deleting {file}"
+                >> Log.addParameter fi.FullName
+            )
             fi.Delete())
  
 
 
 module Main =
+
+    let setLevel (level: Types.LogLevel) (logConfig: LoggerConfiguration) =
+      match level with
+      | LogLevel.Trace -> logConfig.MinimumLevel.Verbose()
+      | LogLevel.Debug -> logConfig.MinimumLevel.Debug()
+      | LogLevel.Info -> logConfig.MinimumLevel.Information()
+      | LogLevel.Warn -> logConfig.MinimumLevel.Warning()
+      | LogLevel.Error -> logConfig.MinimumLevel.Error()
+      | LogLevel.Fatal -> logConfig.MinimumLevel.Fatal()
+      | _ -> logConfig.MinimumLevel.Warning()
+
+    let logger = LogProvider.getLoggerByName("DotnetMono.Main")
         
     type CLIArguments =
         | [<AltCommandLine("-p")>] Project of project:string
@@ -97,7 +115,7 @@ module Main =
         | [<EqualsAssignment>]FrameworkPathOverride of frameworkPathOverride:string
         | [<EqualsAssignment>][<AltCommandLine("-mo")>] MonoOptions of monoOptions:string 
         | [<EqualsAssignment>][<AltCommandLine("-po")>] ProgramOptions of programOptions:string 
-        | LoggerLevel of logLevel:string
+        | LoggerLevel of LogLevel
         | No_Build
         | Purge_System_Net_Http
         with
@@ -114,7 +132,7 @@ module Main =
                     | FrameworkPathOverride _ -> "(Optional) Set FrameworkPathOverride as Environment Variable or as argument.  It will try to infer based on known good locations on osx/linux."
                     | MonoOptions _ -> "(Optional) Flags to be passed to mono."
                     | ProgramOptions _ -> "(Optional) Flags to be passed to running exe."
-                    | LoggerLevel _ -> "(Optional) LogLevel for dotnet-mono defaults to Info (Verbose|Debug|Info|Warn|Error|Fatal)"
+                    | LoggerLevel _ -> "(Optional) LogLevel for dotnet-mono defaults to Info (Trace|Debug|Info|Warn|Error|Fatal)"
                     | No_Build -> "(Optional) Will attempt to skip dotnet build."
                     | Purge_System_Net_Http -> "(Optional) Mono has issues with HttpClient noted here: https://github.com/dotnet/corefx/issues/19914 ...This will attempt to resolve them."
 
@@ -146,14 +164,18 @@ module Main =
 
     let setupCloseSignalers () =
         Console.CancelKeyPress.Add(fun _ ->
-            Message.eventX "Handling CancelKeyPress..." LogLevel.Info
-            |> logger.logSync
+            logger.info(
+                Log.setMessage "Handling CancelKeyPress..."
+            )
+
             Shell.killAllCreatedProcesses()
         )
 
         System.Runtime.Loader.AssemblyLoadContext.Default.add_Unloading(fun _ ->
-            Message.eventX "Handling AssemblyLoadContext Unloading..." LogLevel.Info
-            |> logger.logSync
+            logger.info(
+                Log.setMessage "Handling AssemblyLoadContext Unloading..."
+            )
+
             Shell.killAllCreatedProcesses()
         )
         
@@ -188,26 +210,37 @@ module Main =
                 errorHandler = errorHandler)
                 
         let results = parser.Parse(argus)
-       
-        match results.TryGetResult<@ LoggerLevel @> with
-        | Some ll ->
-            let logaryLevel =
+
+        let logLevel =
+            match results.TryGetResult<@ LoggerLevel @> with
+            | Some ll ->
                 ll
-                |> LogLevel.ofString
-            logger <- Log.create logaryLevel "dotnet-mono"
-        | None -> ()
+            | None -> 
+                LogLevel.Info
+                
+        let log =
+            let config =
+                LoggerConfiguration()
+                |> setLevel logLevel
+            config                
+                .WriteTo.ColoredConsole(outputTemplate= "{Timestamp:o} [{Level}] <{SourceContext}> ({Name:l}) {Message:j} - {Properties:j}{NewLine}{Exception}")
+                .Enrich.FromLogContext() //Necessary if you want to use MappedContext
+                .CreateLogger()
+        Log.Logger <- log
 
-        Message.eventX "arguments parsed: {args}" LogLevel.Debug
-        |> setField "args" results
-        |> logger.logSync
-
+        logger.debug(
+            Log.setMessage "arguments parsed: {args}"
+            >> Log.addParameter results
+        )
 
         setupCloseSignalers ()
 
         try
-            Message.eventX "dotnet-mono current process id: {id}" LogLevel.Info
-            |> Message.setField "id" (Process.GetCurrentProcess()).Id
-            |> logger.logSync
+            logger.info(
+                Log.setMessage "dotnet-mono current process id: {id}"
+                >> Log.addParameter (Process.GetCurrentProcess()).Id
+            )
+
         with
         | _ -> ()
 
@@ -217,9 +250,10 @@ module Main =
             | Some p -> getProjectFile p
             | _ -> getDefaultProject ()
 
-        Message.eventX "Project file found: {project}" LogLevel.Debug
-        |> setField "project" project
-        |> logger.logSync
+        logger.debug(
+            Log.setMessage "Project file found: {project}"
+            >> Log.addParameter project
+        )
 
 
         let! frameworkPathOverride =
@@ -235,10 +269,11 @@ module Main =
                         parser.PrintUsage() |> printfn "%s"
                         fail NoFrameworkPathOverrideFound
 
+        logger.debug(
+            Log.setMessage "FrameworkPathOverride: {FrameworkPathOverride}"
+            >> Log.addParameter frameworkPathOverride
+        )
 
-        Message.eventX "FrameworkPathOverride: {FrameworkPathOverride}" LogLevel.Debug
-        |> setField "FrameworkPathOverride" frameworkPathOverride
-        |> logger.logSync
 
         let envVars = 
             Environment.GetEnvironmentVariables()
@@ -272,10 +307,11 @@ module Main =
 
         globalProperties
         |> Seq.iter(fun p -> 
-                Message.eventX "globalProperties {key}={value}"  LogLevel.Verbose
-                |> Message.setField "key"  p.Key
-                |> Message.setField "value" p.Value
-                |> logger.logSync
+            logger.trace(
+                Log.setMessage "globalProperties {key}={value}"
+                >> Log.addParameter  p.Key
+                >> Log.addParameter  p.Value
+            )
         )
 
         let proj = ProjectInstance(project, globalProperties, null)
@@ -283,10 +319,11 @@ module Main =
 
         proj.Properties
         |> Seq.iter(fun p -> 
-                Message.eventX "Project properties {key}={value}"  LogLevel.Verbose
-                |> Message.setField "key"  p.Name
-                |> Message.setField "value" p.EvaluatedValue
-                |> logger.logSync
+            logger.trace(
+                Log.setMessage "Project properties {key}={value}"
+                >> Log.addParameter  p.Name
+                >> Log.addParameter  p.EvaluatedValue
+            )
         )
 
         let! runExeLocation =  
@@ -295,11 +332,11 @@ module Main =
                 fail NoRunnableExecutableFound
             | runCommand -> ok runCommand
 
-        Message.eventX "Run Location : {RunCommand}" LogLevel.Debug
-        |> Message.setField "RunCommand" runExeLocation
-        |> logger.logSync
-        
-       
+        logger.debug(
+            Log.setMessage "Run Location : {RunCommand}"
+            >> Log.addParameter runExeLocation
+        )
+
         if results.Contains <@ Restore @> then
             do! dotnetRestore [
                     runtimeArgs
@@ -353,36 +390,43 @@ module Main =
                 let err = errs |> Seq.head
                 match err with
                 | NoFrameworkPathOverrideFound ->
-                    Message.eventX "Could not find FrameworkPathOverride in Environemnt, Argument, or Inferring" LogLevel.Error
-                    |> logger.logSync
+                    logger.fatal(
+                        Log.setMessage "Could not find FrameworkPathOverride in Environemnt, Argument, or Inferring"
+                    )
                     1
                 | NoRunnableExecutableFound ->
-                    Message.eventX "No runnable executable was found. Ensure your project outputs an executable." LogLevel.Error
-                    |> logger.logSync
+                    logger.fatal(
+                        Log.setMessage  "No runnable executable was found. Ensure your project outputs an executable."
+                    )
                     2
                 | TooManyProjectsInDirectory projs ->
-                    Message.eventX "Too many projects found : {projs}.  Please use --project and pass the project you wish to use" LogLevel.Error
-                    |> Message.setField "projs" projs
-                    |> logger.logSync
+                    logger.fatal(
+                        Log.setMessage "Too many projects found : {projs}.  Please use --project and pass the project you wish to use" 
+                        >> Log.addParameter projs
+                    )
                     3
                 | NoProjectsFoundInDirectory ->
-                    Message.eventX "No project files found." LogLevel.Error
-                    |> logger.logSync
+                    logger.fatal(
+                        Log.setMessage "No project files found."
+                    )
                     4
                 | DotnetRestoreFailure processFailure -> 
-                    Message.eventX "Dotnet restore failure exitcode : {exitcode} ." LogLevel.Error
-                    |> Message.setField "exitcode" processFailure.exitcode
-                    |> logger.logSync
+                    logger.fatal(
+                        Log.setMessage "Dotnet restore failure exitcode : {exitcode} ."
+                        >> Log.addParameter processFailure.exitcode
+                    )
                     5
                 | DotnetBuildFailure processFailure -> 
-                    Message.eventX "Dotnet build failure exitcode : {exitcode} ." LogLevel.Error
-                    |> Message.setField "exitcode" processFailure.exitcode
-                    |> logger.logSync
+                    logger.fatal(
+                        Log.setMessage "Dotnet build failure exitcode : {exitcode}."
+                        >> Log.addParameter processFailure.exitcode
+                    )
                     6
                 | MonoExecuteFailure processFailure -> 
-                    Message.eventX "mono failure exitcode : {exitcode} ." LogLevel.Error
-                    |> Message.setField "exitcode" processFailure.exitcode
-                    |> logger.logSync
+                    logger.fatal(
+                        Log.setMessage "mono failure exitcode : {exitcode}."
+                        >> Log.addParameter processFailure.exitcode
+                    )
                     7
                 
 

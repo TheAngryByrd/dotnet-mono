@@ -3,3 +3,5 @@ Argu
 Microsoft.Build
 Microsoft.Build.Utilities.Core
 Chessie
+Serilog.Sinks.ColoredConsole
+File: FsLibLog.fs

@@ -95,6 +95,12 @@ Target "Publish" (fun _ ->
         )
 )
 
+
+Target "Replace" <| fun _ ->
+    ReplaceInFiles [ "FsLibLog", "DotnetMono.Logging" ]
+                   [ "paket-files/TheAngryByrd/FsLibLog/src/FsLibLog/FsLibLog.fs" ]
+
+
 Target "Release" (fun _ ->
 
     if Git.Information.getBranchName "" <> "master" then failwith "Not on master"
@@ -111,6 +117,7 @@ Target "Release" (fun _ ->
 
 "Clean"
   ==> "DotnetRestore"
+  ==> "Replace"
   ==> "DotnetBuild"
   ==> "DotnetTest"
   ==> "DotnetPack"
