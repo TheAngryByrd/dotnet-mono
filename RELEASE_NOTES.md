@@ -1,5 +1,5 @@
 
-### 0.5.7-beta001  - 2019-10-02
+### 0.5.7-beta002  - 2019-10-02
 * BUGFIX: Logary loading threading issues
 
 
