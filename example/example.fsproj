@@ -16,4 +16,5 @@
     <DotNetCliToolReference Include="dotnet-mono" Version="0.5.7-beta001" />
   </ItemGroup>
   <!-- <Import Project="..\.paket\Paket.Restore.targets" /> -->
+  <!-- <Import Project="..\.paket\Paket.Restore.targets" /> -->
 </Project>
